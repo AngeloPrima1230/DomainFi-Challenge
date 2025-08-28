@@ -10,6 +10,21 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useNetwork, useSwitchNetwork } from 'wagmi';
 import { sepolia } from 'wagmi/chains';
 
+// Advanced filter interface
+interface AdvancedFilters {
+  priceRange: {
+    min: string;
+    max: string;
+  };
+  expirationFilter: 'all' | 'expiring_soon' | 'expired' | 'active';
+  registrarFilter: string;
+  networkFilter: string;
+  ownerFilter: string;
+  tldFilter: string;
+  sortBy: 'name' | 'price' | 'expiration' | 'newest' | 'oldest';
+  sortOrder: 'asc' | 'desc';
+}
+
 export default function Home() {
   const { 
     names, 
@@ -27,6 +42,19 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  
+  // Advanced filters state
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
+    priceRange: { min: '', max: '' },
+    expirationFilter: 'all',
+    registrarFilter: '',
+    networkFilter: '',
+    ownerFilter: '',
+    tldFilter: '',
+    sortBy: 'newest',
+    sortOrder: 'desc'
+  });
   
   // Network switching for Doma Protocol (Sepolia)
   const { address, isConnected } = useAccount();
@@ -52,12 +80,16 @@ export default function Home() {
       id: name.name,
       name: name.name,
       registrar: name.registrar?.name || 'Unknown',
+      registrarId: name.registrar?.ianaId || 0,
       expiresAt: name.expiresAt,
       tokenizedAt: name.tokenizedAt,
       tokens: name.tokens,
       price: null,
       status: 'active',
-      isTokenized: true
+      isTokenized: true,
+      owner: name.claimedBy || 'Unknown',
+      tld: name.name.split('.').pop() || '',
+      networks: name.tokens?.map(token => token.networkId) || []
     })),
     // Add marketplace listings
     ...allListings.map(listing => ({
@@ -65,44 +97,232 @@ export default function Home() {
       id: listing.id,
       name: 'token' in listing ? listing.token?.name : listing.name,
       registrar: 'Doma Marketplace',
+      registrarId: 0,
       expiresAt: listing.expiresAt,
       tokenizedAt: null,
       tokens: null,
       price: listing.price,
       status: 'status' in listing ? listing.status : 'active',
       isTokenized: false,
-      listing: listing
+      listing: listing,
+      owner: 'token' in listing ? listing.token?.ownerAddress : (listing as any).offererAddress || 'Unknown',
+      tld: ('token' in listing ? listing.token?.name : listing.name)?.split('.').pop() || '',
+      networks: 'token' in listing ? [listing.token?.chain?.networkId].filter(Boolean) : []
     }))
   ];
 
-  // Filter searchable items
-              const filteredItems = searchableItems.filter(item => {
-              const matchesSearch = searchTerm === '' ||
-                item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                item.registrar?.toLowerCase().includes(searchTerm.toLowerCase());
+  // Helper functions for filtering
+  const isExpiringSoon = (expiresAt: string) => {
+    if (!expiresAt) return false;
+    const expiryDate = new Date(expiresAt);
+    const now = new Date();
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    return expiryDate <= thirtyDaysFromNow && expiryDate > now;
+  };
 
-              let matchesFilter = true;
-              if (filter === 'all') {
-                matchesFilter = true;
-              } else if (filter === 'listed') {
-                // Show only items that have a price > 0 (are listed for sale)
-                matchesFilter = item.price && parseFloat(item.price) > 0;
-              } else {
-                matchesFilter = item.status === filter;
-              }
+  const isExpired = (expiresAt: string) => {
+    if (!expiresAt) return false;
+    return new Date(expiresAt) < new Date();
+  };
 
-              return matchesSearch && matchesFilter;
-            });
+  const parsePrice = (price: string | null) => {
+    if (!price) return 0;
+    return parseFloat(price) || 0;
+  };
+
+  // Network mapping for readable names
+  const getNetworkName = (networkId: string) => {
+    const networkMap: { [key: string]: string } = {
+      '1': 'Ethereum Mainnet',
+      '5': 'Goerli Testnet',
+      '10': 'Optimism',
+      '56': 'BNB Smart Chain',
+      '137': 'Polygon',
+      '42161': 'Arbitrum One',
+      '42170': 'Arbitrum Nova',
+      '43114': 'Avalanche C-Chain',
+      '8453': 'Base',
+      '11155111': 'Sepolia Testnet',
+      '80001': 'Mumbai Testnet',
+      '97': 'BNB Smart Chain Testnet',
+      '43113': 'Avalanche Fuji Testnet',
+      '420': 'Optimism Goerli',
+      '421613': 'Arbitrum Goerli',
+      '84531': 'Base Goerli',
+      '84532': 'Base Sepolia',
+      '33111': 'Zora Testnet',
+      '157': 'Zora Mainnet',
+      '7777777': 'Zora',
+      '999': 'Zora Sepolia',
+      '97476': 'Doma Protocol Network'
+    };
+
+    // Handle eip155: format
+    if (networkId.startsWith('eip155:')) {
+      const id = networkId.replace('eip155:', '');
+      return networkMap[id] || `Network ${id}`;
+    }
+
+    // Handle direct IDs
+    return networkMap[networkId] || `Network ${networkId}`;
+  };
+
+  const getNetworkId = (networkName: string) => {
+    const reverseNetworkMap: { [key: string]: string } = {
+      'Ethereum Mainnet': '1',
+      'Goerli Testnet': '5',
+      'Optimism': '10',
+      'BNB Smart Chain': '56',
+      'Polygon': '137',
+      'Arbitrum One': '42161',
+      'Arbitrum Nova': '42170',
+      'Avalanche C-Chain': '43114',
+      'Base': '8453',
+      'Sepolia Testnet': '11155111',
+      'Mumbai Testnet': '80001',
+      'BNB Smart Chain Testnet': '97',
+      'Avalanche Fuji Testnet': '43113',
+      'Optimism Goerli': '420',
+      'Arbitrum Goerli': '421613',
+      'Base Goerli': '84531',
+      'Base Sepolia': '84532',
+      'Zora Testnet': '33111',
+      'Zora Mainnet': '157',
+      'Zora': '7777777',
+      'Zora Sepolia': '999',
+      'Doma Protocol Network': '97476'
+    };
+
+    return reverseNetworkMap[networkName] || networkName;
+  };
+
+  // Filter searchable items with advanced filters
+  const filteredItems = searchableItems.filter(item => {
+    // Basic search filter
+    const matchesSearch = searchTerm === '' ||
+      item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.registrar?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.owner?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    // Basic status filter
+    let matchesFilter = true;
+    if (filter === 'all') {
+      matchesFilter = true;
+    } else if (filter === 'listed') {
+      matchesFilter = item.price && parseFloat(item.price) > 0;
+    } else {
+      matchesFilter = item.status === filter;
+    }
+
+    // Advanced filters
+    const matchesPriceRange = (!advancedFilters.priceRange.min || parsePrice(item.price) >= parseFloat(advancedFilters.priceRange.min)) &&
+                             (!advancedFilters.priceRange.max || parsePrice(item.price) <= parseFloat(advancedFilters.priceRange.max));
+
+    const matchesExpirationFilter = advancedFilters.expirationFilter === 'all' ||
+      (advancedFilters.expirationFilter === 'expiring_soon' && isExpiringSoon(item.expiresAt)) ||
+      (advancedFilters.expirationFilter === 'expired' && isExpired(item.expiresAt)) ||
+      (advancedFilters.expirationFilter === 'active' && !isExpired(item.expiresAt));
+
+    const matchesRegistrarFilter = !advancedFilters.registrarFilter || 
+      item.registrar?.toLowerCase().includes(advancedFilters.registrarFilter.toLowerCase());
+
+    const matchesNetworkFilter = !advancedFilters.networkFilter || 
+      item.networks?.some(network => {
+        if (!network) return false;
+        const networkName = getNetworkName(network);
+        return networkName.toLowerCase().includes(advancedFilters.networkFilter.toLowerCase());
+      });
+
+    const matchesOwnerFilter = !advancedFilters.ownerFilter || 
+      item.owner?.toLowerCase().includes(advancedFilters.ownerFilter.toLowerCase());
+
+    const matchesTldFilter = !advancedFilters.tldFilter || 
+      item.tld?.toLowerCase().includes(advancedFilters.tldFilter.toLowerCase());
+
+    return matchesSearch && matchesFilter && matchesPriceRange && matchesExpirationFilter && 
+           matchesRegistrarFilter && matchesNetworkFilter && matchesOwnerFilter && matchesTldFilter;
+  });
+
+  // Sort filtered items
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    const order = advancedFilters.sortOrder === 'asc' ? 1 : -1;
+    
+    switch (advancedFilters.sortBy) {
+      case 'name':
+        return (a.name || '').localeCompare(b.name || '') * order;
+      case 'price':
+        return (parsePrice(a.price) - parsePrice(b.price)) * order;
+      case 'expiration':
+        return (new Date(a.expiresAt || 0).getTime() - new Date(b.expiresAt || 0).getTime()) * order;
+      case 'newest':
+        return (new Date(a.tokenizedAt || 0).getTime() - new Date(b.tokenizedAt || 0).getTime()) * order;
+      case 'oldest':
+        return (new Date(b.tokenizedAt || 0).getTime() - new Date(a.tokenizedAt || 0).getTime()) * order;
+      default:
+        return 0;
+    }
+  });
+
+  // Get unique values for filter options
+  const uniqueRegistrars = [...new Set(searchableItems.map(item => item.registrar).filter(Boolean))];
+  
+  // Get networks from data and add common networks
+  const dataNetworks = [...new Set(
+    searchableItems
+      .flatMap(item => item.networks)
+      .filter(Boolean)
+      .map(network => getNetworkName(network))
+  )];
+  
+  // Add common networks that users might want to filter by
+  const commonNetworks = [
+    'Ethereum Mainnet',
+    'Sepolia Testnet',
+    'Polygon',
+    'Arbitrum One',
+    'Optimism',
+    'Base',
+    'Base Sepolia',
+    'Zora',
+    'Zora Mainnet',
+    'Zora Testnet',
+    'Doma Protocol Network'
+  ];
+  
+  const uniqueNetworks = [...new Set([...dataNetworks, ...commonNetworks])].sort();
+  
+  const uniqueTlds = [...new Set(searchableItems.map(item => item.tld).filter(Boolean))];
 
   // Debug logging
   console.log('Search term:', searchTerm);
+  console.log('Advanced filters:', {
+    ...advancedFilters,
+    networkFilter: advancedFilters.networkFilter ? 
+      `"${advancedFilters.networkFilter}" (${getNetworkId(advancedFilters.networkFilter)})` : 
+      'All Networks'
+  });
   console.log('Total searchable items:', searchableItems.length);
-  console.log('Filtered items:', filteredItems.length);
-  console.log('Sample searchable items:', searchableItems.slice(0, 3));
+  console.log('Filtered items:', sortedItems.length);
+  console.log('Available networks:', uniqueNetworks);
 
   const handleViewDetails = (domain: any) => {
     setSelectedDomain(domain);
     setIsDetailsModalOpen(true);
+  };
+
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setFilter('all');
+    setAdvancedFilters({
+      priceRange: { min: '', max: '' },
+      expirationFilter: 'all',
+      registrarFilter: '',
+      networkFilter: '',
+      ownerFilter: '',
+      tldFilter: '',
+      sortBy: 'newest',
+      sortOrder: 'desc'
+    });
   };
 
   const stats = {
@@ -110,7 +330,7 @@ export default function Home() {
     tokenizedDomains: names.length,
     totalVolume: allListings.reduce((sum, l) => sum + parseFloat(l.price || '0'), 0).toFixed(2),
     listedDomains: allListings.length,
-    searchResults: filteredItems.length
+    searchResults: sortedItems.length
   };
 
   return (
@@ -168,32 +388,54 @@ export default function Home() {
           </div>
 
           {/* Search Results Counter */}
-          {searchTerm && (
+          {(searchTerm || Object.values(advancedFilters).some(v => v !== '' && v !== 'all' && (typeof v === 'object' ? Object.values(v).some(x => x !== '') : true))) && (
             <div className="text-center mb-8">
               <p className="text-gray-300">
-                Found <span className="text-blue-400 font-semibold">{stats.searchResults}</span> results for "{searchTerm}"
+                Found <span className="text-blue-400 font-semibold">{stats.searchResults}</span> results
+                {searchTerm && ` for "${searchTerm}"`}
               </p>
+              <button
+                onClick={clearAllFilters}
+                className="text-sm text-gray-400 hover:text-white mt-2 underline"
+              >
+                Clear all filters
+              </button>
             </div>
           )}
 
-          {/* Search and Filter */}
-          <div className="flex flex-col sm:flex-row gap-4 max-w-2xl mx-auto mb-8">
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                placeholder="Search domains..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <svg className="absolute right-3 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+          {/* Advanced Search and Filter */}
+          <div className="max-w-4xl mx-auto mb-8 space-y-4">
+            {/* Basic Search */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  placeholder="Search domains, registrars, or owners..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <svg className="absolute right-3 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <button
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+                  showAdvancedFilters
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg'
+                    : 'bg-white/10 backdrop-blur-sm border border-white/20 text-gray-300 hover:bg-white/20 hover:border-white/30'
+                }`}
+              >
+                {showAdvancedFilters ? 'Hide Filters' : 'Advanced Filters'}
+              </button>
             </div>
-            <div className="flex gap-2">
+
+            {/* Basic Filter Buttons */}
+            <div className="flex flex-wrap gap-2 justify-center">
               <button
                 onClick={() => setFilter('all')}
-                className={`px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
                   filter === 'all'
                     ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
                     : 'bg-white/10 backdrop-blur-sm border border-white/20 text-gray-300 hover:bg-white/20 hover:border-white/30'
@@ -203,7 +445,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setFilter('listed')}
-                className={`px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
                   filter === 'listed'
                     ? 'bg-gradient-to-r from-green-500 to-blue-600 text-white shadow-lg'
                     : 'bg-white/10 backdrop-blur-sm border border-white/20 text-gray-300 hover:bg-white/20 hover:border-white/30'
@@ -213,7 +455,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setFilter('active')}
-                className={`px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
                   filter === 'active'
                     ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg'
                     : 'bg-white/10 backdrop-blur-sm border border-white/20 text-gray-300 hover:bg-white/20 hover:border-white/30'
@@ -223,7 +465,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setFilter('sold')}
-                className={`px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
                   filter === 'sold'
                     ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
                     : 'bg-white/10 backdrop-blur-sm border border-white/20 text-gray-300 hover:bg-white/20 hover:border-white/30'
@@ -232,6 +474,209 @@ export default function Home() {
                 Sold
               </button>
             </div>
+
+            {/* Advanced Filters Panel */}
+            {showAdvancedFilters && (
+              <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+                {/* Filter Sections */}
+                <div className="space-y-6">
+                  {/* Row 1: Price Range and Expiration */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Price Range */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-300">Price Range (ETH)</label>
+                      <div className="flex gap-3">
+                        <div className="flex-1 relative">
+                          <input
+                            type="number"
+                            placeholder="Min"
+                            value={advancedFilters.priceRange.min}
+                            onChange={(e) => setAdvancedFilters(prev => ({
+                              ...prev,
+                              priceRange: { ...prev.priceRange, min: e.target.value }
+                            }))}
+                            className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white placeholder-gray-400 focus-ring smooth-transition"
+                          />
+                        </div>
+                        <div className="flex-1 relative">
+                          <input
+                            type="number"
+                            placeholder="Max"
+                            value={advancedFilters.priceRange.max}
+                            onChange={(e) => setAdvancedFilters(prev => ({
+                              ...prev,
+                              priceRange: { ...prev.priceRange, max: e.target.value }
+                            }))}
+                            className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white placeholder-gray-400 focus-ring smooth-transition"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Expiration Filter */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-300">Expiration Status</label>
+                                              <div className="relative select-wrapper">
+                          <select
+                            value={advancedFilters.expirationFilter}
+                            onChange={(e) => setAdvancedFilters(prev => ({
+                              ...prev,
+                              expirationFilter: e.target.value as any
+                            }))}
+                            className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white custom-select focus-ring smooth-transition"
+                          >
+                          <option value="all" className="bg-slate-800 text-white">All Expiration Status</option>
+                          <option value="expiring_soon" className="bg-slate-800 text-white">Expiring Soon (30 days)</option>
+                          <option value="expired" className="bg-slate-800 text-white">Expired</option>
+                          <option value="active" className="bg-slate-800 text-white">Active</option>
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Row 2: Registrar and Network */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Registrar Filter */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-300">Registrar</label>
+                      <div className="relative select-wrapper">
+                        <select
+                          value={advancedFilters.registrarFilter}
+                          onChange={(e) => setAdvancedFilters(prev => ({
+                            ...prev,
+                            registrarFilter: e.target.value
+                          }))}
+                          className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white custom-select focus-ring smooth-transition"
+                        >
+                          <option value="" className="bg-slate-800 text-white">All Registrars</option>
+                          {uniqueRegistrars.map(registrar => (
+                            <option key={registrar} value={registrar} className="bg-slate-800 text-white">{registrar}</option>
+                          ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Network Filter */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-300">Network</label>
+                      <div className="relative select-wrapper">
+                        <select
+                          value={advancedFilters.networkFilter}
+                          onChange={(e) => setAdvancedFilters(prev => ({
+                            ...prev,
+                            networkFilter: e.target.value
+                          }))}
+                          className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white custom-select focus-ring smooth-transition"
+                        >
+                          <option value="" className="bg-slate-800 text-white">All Networks</option>
+                          {uniqueNetworks.map(network => (
+                            <option key={network} value={network} className="bg-slate-800 text-white">{network}</option>
+                          ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Row 3: TLD and Owner */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* TLD Filter */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-300">Top-Level Domain</label>
+                      <div className="relative select-wrapper">
+                        <select
+                          value={advancedFilters.tldFilter}
+                          onChange={(e) => setAdvancedFilters(prev => ({
+                            ...prev,
+                            tldFilter: e.target.value
+                          }))}
+                          className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white custom-select focus-ring smooth-transition"
+                        >
+                          <option value="" className="bg-slate-800 text-white">All TLDs</option>
+                          {uniqueTlds.map(tld => (
+                            <option key={tld} value={tld} className="bg-slate-800 text-white">.{tld}</option>
+                          ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Owner Filter */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-300">Owner Address</label>
+                      <input
+                        type="text"
+                        placeholder="Search by owner address..."
+                        value={advancedFilters.ownerFilter}
+                        onChange={(e) => setAdvancedFilters(prev => ({
+                          ...prev,
+                          ownerFilter: e.target.value
+                        }))}
+                        className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white placeholder-gray-400 focus-ring smooth-transition"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Row 4: Sort Options */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-300">Sort Options</label>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <div className="flex-1 relative select-wrapper">
+                        <select
+                          value={advancedFilters.sortBy}
+                          onChange={(e) => setAdvancedFilters(prev => ({
+                            ...prev,
+                            sortBy: e.target.value as any
+                          }))}
+                          className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white custom-select focus-ring smooth-transition"
+                        >
+                          <option value="newest" className="bg-slate-800 text-white">Newest First</option>
+                          <option value="oldest" className="bg-slate-800 text-white">Oldest First</option>
+                          <option value="name" className="bg-slate-800 text-white">Name A-Z</option>
+                          <option value="price" className="bg-slate-800 text-white">Price (Low to High)</option>
+                          <option value="expiration" className="bg-slate-800 text-white">Expiration Date</option>
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setAdvancedFilters(prev => ({
+                          ...prev,
+                          sortOrder: prev.sortOrder === 'asc' ? 'desc' : 'asc'
+                        }))}
+                        className="px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white hover:bg-white/20 hover:border-white/30 smooth-transition flex items-center justify-center min-w-[60px]"
+                        title={advancedFilters.sortOrder === 'asc' ? 'Ascending Order' : 'Descending Order'}
+                      >
+                        <span className="text-lg font-medium">
+                          {advancedFilters.sortOrder === 'asc' ? '↑' : '↓'}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Create Auction Button */}
@@ -258,7 +703,7 @@ export default function Home() {
                 <p className="text-red-400">Error loading data: {error}</p>
               </div>
             </div>
-          ) : filteredItems.length === 0 ? (
+          ) : sortedItems.length === 0 ? (
             <div className="text-center py-12">
               <div className="bg-white/5 backdrop-blur-sm rounded-lg p-8 max-w-md mx-auto border border-white/10">
                 <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -276,7 +721,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredItems.map((item, index) => (
+              {sortedItems.map((item, index) => (
                 <AuctionCard 
                   key={item.id || index} 
                   auction={item} 

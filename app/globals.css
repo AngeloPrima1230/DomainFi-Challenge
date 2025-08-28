@@ -127,5 +127,37 @@ body {
   .glass-effect {
     @apply backdrop-blur-sm bg-white/10 border border-white/20;
   }
+  
+  /* Custom dropdown styling */
+  .custom-select {
+    @apply appearance-none cursor-pointer;
+  }
+  
+  .custom-select option {
+    @apply bg-slate-800 text-white;
+  }
+  
+  /* Ensure dropdown arrow is properly positioned */
+  .select-wrapper {
+    @apply relative;
+  }
+  
+  .select-wrapper select {
+    @apply pr-10;
+  }
+  
+  .select-arrow {
+    @apply absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none;
+  }
+  
+  /* Focus states for better accessibility */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+  }
+  
+  /* Smooth transitions for all interactive elements */
+  .smooth-transition {
+    @apply transition-all duration-200;
+  }
 }
 
