@@ -18,6 +18,7 @@ export default function Home() {
   const [selectedDomain, setSelectedDomain] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   
   // Network switching for Doma Protocol (Sepolia)
   const { address, isConnected } = useAccount();
@@ -67,15 +68,23 @@ export default function Home() {
   ];
 
   // Filter searchable items
-  const filteredItems = searchableItems.filter(item => {
-    const matchesSearch = searchTerm === '' || 
-      item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.registrar?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = filter === 'all' || item.status === filter;
-    
-    return matchesSearch && matchesFilter;
-  });
+              const filteredItems = searchableItems.filter(item => {
+              const matchesSearch = searchTerm === '' ||
+                item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                item.registrar?.toLowerCase().includes(searchTerm.toLowerCase());
+
+              let matchesFilter = true;
+              if (filter === 'all') {
+                matchesFilter = true;
+              } else if (filter === 'listed') {
+                // Show only items that have a price > 0 (are listed for sale)
+                matchesFilter = item.price && parseFloat(item.price) > 0;
+              } else {
+                matchesFilter = item.status === filter;
+              }
+
+              return matchesSearch && matchesFilter;
+            });
 
   // Debug logging
   console.log('Search term:', searchTerm);
@@ -173,16 +182,48 @@ export default function Home() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Domains</option>
-              <option value="active">Active</option>
-              <option value="sold">Sold</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setFilter('all')}
+                className={`px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
+                  filter === 'all'
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                    : 'bg-white/10 backdrop-blur-sm border border-white/20 text-gray-300 hover:bg-white/20 hover:border-white/30'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setFilter('listed')}
+                className={`px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
+                  filter === 'listed'
+                    ? 'bg-gradient-to-r from-green-500 to-blue-600 text-white shadow-lg'
+                    : 'bg-white/10 backdrop-blur-sm border border-white/20 text-gray-300 hover:bg-white/20 hover:border-white/30'
+                }`}
+              >
+                Listed
+              </button>
+              <button
+                onClick={() => setFilter('active')}
+                className={`px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
+                  filter === 'active'
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg'
+                    : 'bg-white/10 backdrop-blur-sm border border-white/20 text-gray-300 hover:bg-white/20 hover:border-white/30'
+                }`}
+              >
+                Active
+              </button>
+              <button
+                onClick={() => setFilter('sold')}
+                className={`px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
+                  filter === 'sold'
+                    ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
+                    : 'bg-white/10 backdrop-blur-sm border border-white/20 text-gray-300 hover:bg-white/20 hover:border-white/30'
+                }`}
+              >
+                Sold
+              </button>
+            </div>
           </div>
 
           {/* Create Auction Button */}
