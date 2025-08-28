@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { formatEther } from 'viem';
+import ActivityTab from './ActivityTab';
 
 interface DomainDetails {
   id: string;
@@ -23,27 +24,68 @@ interface DomainDetails {
   tokens?: any[];
   isTokenized?: boolean;
   listing?: any;
+  claimedBy?: string;
 }
 
 interface DomainDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   domain: DomainDetails | null;
+  getNameActivities?: (name: string, skip?: number, take?: number) => Promise<any>;
+  getTokenActivities?: (tokenId: string, skip?: number, take?: number) => Promise<any>;
+  getCommandStatus?: (correlationId: string) => Promise<any>;
 }
 
-export default function DomainDetailsModal({ isOpen, onClose, domain }: DomainDetailsModalProps) {
+export default function DomainDetailsModal({ 
+  isOpen, 
+  onClose, 
+  domain, 
+  getNameActivities, 
+  getTokenActivities, 
+  getCommandStatus 
+}: DomainDetailsModalProps) {
   if (!isOpen || !domain) return null;
 
   const domainName = domain.name || domain.token?.name || 'Unknown Domain';
   const price = domain.price ? parseFloat(domain.price) : 0;
   const currency = domain.currency || 'ETH';
   const status = domain.status || 'active';
-  const seller = domain.seller || domain.offererAddress || domain.token?.ownerAddress || 'Unknown';
+  // Parse CAIP-10 address to get just the EVM address
+  const parseCAIP10Address = (caip10Address: string) => {
+    if (caip10Address && caip10Address.includes(':')) {
+      return caip10Address.split(':').pop(); // Get the last part (the actual EVM address)
+    }
+    return caip10Address;
+  };
+
+  // Get the owner from the correct data structure
+  const getOwner = () => {
+    // For tokenized names, check tokens array for owner
+    if (domain.tokens && domain.tokens.length > 0) {
+      return parseCAIP10Address(domain.tokens[0].ownerAddress);
+    }
+    // For claimed domains, use claimedBy
+    if (domain.claimedBy) {
+      return parseCAIP10Address(domain.claimedBy);
+    }
+    // For listings, use offererAddress
+    if (domain.offererAddress) {
+      return parseCAIP10Address(domain.offererAddress);
+    }
+    // Fallback for other cases
+    if (domain.seller) {
+      return parseCAIP10Address(domain.seller);
+    }
+    return 'Unknown';
+  };
+  
+  const seller = getOwner();
   const registrar = domain.registrar || 'Unknown Registrar';
   const expiryDate = domain.expiresAt || domain.domainExpiry;
   const isTokenized = domain.isTokenized || domain.type === 'tokenized_name';
   const tokenizedAt = domain.tokenizedAt;
   const tokens = domain.tokens || [];
+  const [activeTab, setActiveTab] = useState<'details' | 'activities'>('details');
 
   const formatPrice = (price: number) => {
     if (currency === 'ETH') {
@@ -124,127 +166,168 @@ export default function DomainDetailsModal({ isOpen, onClose, domain }: DomainDe
           </div>
         </div>
 
+        {/* Tab Navigation */}
+        <div className="px-6 pt-4 border-b border-white/10">
+          <div className="flex space-x-6">
+            <button
+              onClick={() => setActiveTab('details')}
+              className={`pb-4 px-2 font-medium transition-colors ${
+                activeTab === 'details'
+                  ? 'text-white border-b-2 border-blue-500'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Details
+            </button>
+            <button
+              onClick={() => setActiveTab('activities')}
+              className={`pb-4 px-2 font-medium transition-colors ${
+                activeTab === 'activities'
+                  ? 'text-white border-b-2 border-blue-500'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Activity History
+            </button>
+          </div>
+        </div>
+
         {/* Content */}
         <div className="p-6 space-y-6">
-          {/* Basic Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2">Domain Information</h3>
-              
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Domain Name</span>
-                  <span className="text-white font-mono">{domainName}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Registrar</span>
-                  <span className="text-white">{registrar}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Expiration</span>
-                  <span className="text-white">{formatExpiry(expiryDate)}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Status</span>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(status)}`}>
-                    {getStatusText(status)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2">Tokenization Details</h3>
-              
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Tokenized</span>
-                  <span className="text-white">{isTokenized ? 'Yes' : 'No'}</span>
-                </div>
-                
-                {isTokenized && tokenizedAt && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Tokenized Date</span>
-                    <span className="text-white">{new Date(tokenizedAt).toLocaleDateString()}</span>
-                  </div>
-                )}
-                
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Price</span>
-                  <span className="text-green-400 font-semibold">
-                    {price > 0 ? formatPrice(price) : isTokenized ? 'Not Listed' : 'N/A'}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Owner</span>
-                  <span className="text-white font-mono text-sm">
-                    {seller.length > 10 ? `${seller.slice(0, 6)}...${seller.slice(-4)}` : seller}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Token Information */}
-          {isTokenized && tokens.length > 0 && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2">Token Information</h3>
-              
-              <div className="bg-white/5 rounded-lg p-4 space-y-3">
-                {tokens.map((token, index) => (
-                  <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-400">Token ID:</span>
-                      <span className="text-white font-mono ml-2">{token.tokenId}</span>
+          {activeTab === 'details' && (
+            <>
+              {/* Basic Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2">Domain Information</h3>
+                  
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Domain Name</span>
+                      <span className="text-white font-mono">{domainName}</span>
                     </div>
-                    <div>
-                      <span className="text-gray-400">Type:</span>
-                      <span className="text-white ml-2">{token.type}</span>
+                    
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Registrar</span>
+                      <span className="text-white">{registrar}</span>
                     </div>
-                    <div>
-                      <span className="text-gray-400">Network:</span>
-                      <span className="text-white ml-2">{token.chain?.name || 'Unknown'}</span>
+                    
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Expiration</span>
+                      <span className="text-white">{formatExpiry(expiryDate)}</span>
+                    </div>
+                    
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Status</span>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(status)}`}>
+                        {getStatusText(status)}
+                      </span>
                     </div>
                   </div>
-                ))}
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2">Tokenization Details</h3>
+                  
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Tokenized</span>
+                      <span className="text-white">{isTokenized ? 'Yes' : 'No'}</span>
+                    </div>
+                    
+                    {isTokenized && tokenizedAt && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Tokenized Date</span>
+                        <span className="text-white">{new Date(tokenizedAt).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Price</span>
+                      <span className="text-green-400 font-semibold">
+                        {price > 0 ? formatPrice(price) : isTokenized ? 'Not Listed' : 'N/A'}
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Owner</span>
+                      <span className="text-white font-mono text-sm">
+                        {seller.length > 10 ? `${seller.slice(0, 6)}...${seller.slice(-4)}` : seller}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+
+              {/* Token Information */}
+              {isTokenized && tokens.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2">Token Information</h3>
+                  
+                  <div className="bg-white/5 rounded-lg p-4 space-y-3">
+                    {tokens.map((token, index) => (
+                      <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-400">Token ID:</span>
+                          <span className="text-white font-mono ml-2">{token.tokenId}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Type:</span>
+                          <span className="text-white ml-2">{token.type}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Network:</span>
+                          <span className="text-white ml-2">{token.chain?.name || 'Unknown'}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Listing Information */}
+              {domain.listing && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2">Listing Information</h3>
+                  
+                  <div className="bg-white/5 rounded-lg p-4 space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-400">Listing ID:</span>
+                        <span className="text-white font-mono ml-2">{domain.listing.id}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Orderbook:</span>
+                        <span className="text-white ml-2">{domain.listing.orderbook}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Created:</span>
+                        <span className="text-white ml-2">
+                          {new Date(domain.listing.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Updated:</span>
+                        <span className="text-white ml-2">
+                          {new Date(domain.listing.updatedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
-          {/* Listing Information */}
-          {domain.listing && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2">Listing Information</h3>
-              
-              <div className="bg-white/5 rounded-lg p-4 space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-400">Listing ID:</span>
-                    <span className="text-white font-mono ml-2">{domain.listing.id}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Orderbook:</span>
-                    <span className="text-white ml-2">{domain.listing.orderbook}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Created:</span>
-                    <span className="text-white ml-2">
-                      {new Date(domain.listing.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Updated:</span>
-                    <span className="text-white ml-2">
-                      {new Date(domain.listing.updatedAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {/* Activity History Tab */}
+          {activeTab === 'activities' && getNameActivities && getTokenActivities && getCommandStatus && (
+            <ActivityTab
+              domainName={domainName}
+              tokenId={tokens[0]?.tokenId}
+              getNameActivities={getNameActivities}
+              getTokenActivities={getTokenActivities}
+              getCommandStatus={getCommandStatus}
+            />
           )}
         </div>
 

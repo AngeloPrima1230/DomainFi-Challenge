@@ -130,6 +130,133 @@ const GET_LISTINGS = gql`
   }
 `;
 
+// GraphQL query for name activities
+const GET_NAME_ACTIVITIES = gql`
+  query GetNameActivities($name: String!, $skip: Float, $take: Float) {
+    nameActivities(name: $name, skip: $skip, take: $take, sortOrder: DESC) {
+      items {
+        __typename
+        ... on NameClaimedActivity {
+          type
+          txHash
+          sld
+          tld
+          createdAt
+          claimedBy
+        }
+        ... on NameDetokenizedActivity {
+          type
+          txHash
+          sld
+          tld
+          createdAt
+          networkId
+        }
+        ... on NameClaimRequestedActivity {
+          type
+          txHash
+          sld
+          tld
+          createdAt
+        }
+        ... on NameRenewedActivity {
+          type
+          txHash
+          sld
+          tld
+          createdAt
+          expiresAt
+        }
+        ... on NameTokenizedActivity {
+          type
+          txHash
+          sld
+          tld
+          createdAt
+          networkId
+        }
+      }
+      totalCount
+      pageSize
+      currentPage
+      totalPages
+      hasNextPage
+      hasPreviousPage
+    }
+  }
+`;
+
+// GraphQL query for token activities
+const GET_TOKEN_ACTIVITIES = gql`
+  query GetTokenActivities($tokenId: String!, $skip: Float, $take: Float) {
+    tokenActivities(tokenId: $tokenId, skip: $skip, take: $take, sortOrder: DESC) {
+      items {
+        __typename
+        ... on TokenMintedActivity {
+          type
+          networkId
+          txHash
+          finalized
+          tokenId
+          createdAt
+        }
+        ... on TokenListedActivity {
+          type
+          networkId
+          txHash
+          finalized
+          tokenId
+          createdAt
+        }
+        ... on TokenListingCancelledActivity {
+          type
+          networkId
+          txHash
+          finalized
+          tokenId
+          createdAt
+        }
+        ... on TokenBoughtOutActivity {
+          type
+          networkId
+          txHash
+          finalized
+          tokenId
+          createdAt
+        }
+        ... on TokenFractionalizedActivity {
+          type
+          networkId
+          txHash
+          finalized
+          tokenId
+          createdAt
+        }
+      }
+      totalCount
+      pageSize
+      currentPage
+      totalPages
+      hasNextPage
+      hasPreviousPage
+    }
+  }
+`;
+
+// GraphQL query for command status
+const GET_COMMAND_STATUS = gql`
+  query GetCommandStatus($correlationId: String!) {
+    command(correlationId: $correlationId) {
+      correlationId
+      type
+      status
+      createdAt
+      updatedAt
+      error
+    }
+  }
+`;
+
 // Create Apollo Client for Doma Protocol with API key authentication
 const httpLink = createHttpLink({
   uri: process.env.NEXT_PUBLIC_DOMA_SUBGRAPH_URL || 'https://api-testnet.doma.xyz/graphql',
@@ -209,6 +336,37 @@ export interface PaginatedResponse<T> {
   totalPages: number;
   hasNextPage: boolean;
   hasPreviousPage: boolean;
+}
+
+export interface NameActivity {
+  __typename?: string;
+  type?: string;
+  txHash?: string;
+  sld?: string;
+  tld?: string;
+  createdAt?: string;
+  claimedBy?: string;
+  networkId?: string;
+  expiresAt?: string;
+}
+
+export interface TokenActivity {
+  __typename?: string;
+  type?: string;
+  networkId?: string;
+  txHash?: string;
+  finalized?: boolean;
+  tokenId?: string;
+  createdAt?: string;
+}
+
+export interface CommandStatus {
+  correlationId: string;
+  type: string;
+  status: 'PENDING' | 'FINALIZING' | 'SUCCEEDED' | 'FAILED' | 'PARTIALLY_SUCCEEDED';
+  createdAt: string;
+  updatedAt: string;
+  error?: string;
 }
 
 export function useDomaSubgraph() {
@@ -388,6 +546,62 @@ export function useDomaSubgraph() {
     }
   };
 
+  // Fetch name activities
+  const getNameActivities = async (name: string, skip = 0, take = 50): Promise<PaginatedResponse<NameActivity>> => {
+    try {
+      const { data } = await client.query({
+        query: GET_NAME_ACTIVITIES,
+        variables: { 
+          name, 
+          skip: skip > 0 ? Number(skip) : null, 
+          take: Number(take) 
+        },
+        fetchPolicy: 'network-only',
+      });
+
+      return data.nameActivities || { items: [], totalCount: 0, pageSize: take, currentPage: 1, totalPages: 0, hasNextPage: false, hasPreviousPage: false };
+    } catch (err) {
+      console.error('Error fetching name activities:', err);
+      return { items: [], totalCount: 0, pageSize: take, currentPage: 1, totalPages: 0, hasNextPage: false, hasPreviousPage: false };
+    }
+  };
+
+  // Fetch token activities
+  const getTokenActivities = async (tokenId: string, skip = 0, take = 50): Promise<PaginatedResponse<TokenActivity>> => {
+    try {
+      const { data } = await client.query({
+        query: GET_TOKEN_ACTIVITIES,
+        variables: { 
+          tokenId, 
+          skip: skip > 0 ? Number(skip) : null, 
+          take: Number(take) 
+        },
+        fetchPolicy: 'network-only',
+      });
+
+      return data.tokenActivities || { items: [], totalCount: 0, pageSize: take, currentPage: 1, totalPages: 0, hasNextPage: false, hasPreviousPage: false };
+    } catch (err) {
+      console.error('Error fetching token activities:', err);
+      return { items: [], totalCount: 0, pageSize: take, currentPage: 1, totalPages: 0, hasNextPage: false, hasPreviousPage: false };
+    }
+  };
+
+  // Fetch command status
+  const getCommandStatus = async (correlationId: string): Promise<CommandStatus | null> => {
+    try {
+      const { data } = await client.query({
+        query: GET_COMMAND_STATUS,
+        variables: { correlationId },
+        fetchPolicy: 'network-only',
+      });
+
+      return data.command;
+    } catch (err) {
+      console.error('Error fetching command status:', err);
+      return null;
+    }
+  };
+
   return {
     names,
     listings,
@@ -398,6 +612,9 @@ export function useDomaSubgraph() {
     getNameDetails,
     searchNames,
     getNamesByOwner,
+    getNameActivities,
+    getTokenActivities,
+    getCommandStatus,
   };
 }
 

@@ -37,7 +37,35 @@ export default function AuctionCard({ auction, onViewDetails }: AuctionCardProps
   const price = auction.price ? parseFloat(auction.price) : 0;
   const currency = auction.currency || 'ETH';
   const status = auction.status || 'active';
-  const seller = auction.seller || auction.offererAddress || auction.token?.ownerAddress || 'Unknown';
+  // Parse CAIP-10 address to get just the EVM address
+  const parseCAIP10Address = (caip10Address: string) => {
+    if (caip10Address && caip10Address.includes(':')) {
+      return caip10Address.split(':').pop(); // Get the last part (the actual EVM address)
+    }
+    return caip10Address;
+  };
+
+  // Get the owner from the correct data structure
+  const getOwner = () => {
+    // For tokenized names, check tokens array for owner
+    if (auction.tokens && auction.tokens.length > 0) {
+      return parseCAIP10Address(auction.tokens[0].ownerAddress);
+    }
+    // For listings, use offererAddress
+    if (auction.offererAddress) {
+      return parseCAIP10Address(auction.offererAddress);
+    }
+    // Fallback for other cases
+    if (auction.seller) {
+      return parseCAIP10Address(auction.seller);
+    }
+    if (auction.token?.ownerAddress) {
+      return parseCAIP10Address(auction.token.ownerAddress);
+    }
+    return 'Unknown';
+  };
+  
+  const seller = getOwner();
   const registrar = auction.registrar || 'Unknown Registrar';
   const expiryDate = auction.expiresAt || auction.domainExpiry;
   const isTokenized = auction.isTokenized || auction.type === 'tokenized_name';

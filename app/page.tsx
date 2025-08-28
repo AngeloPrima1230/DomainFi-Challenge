@@ -11,7 +11,15 @@ import { useAccount, useNetwork, useSwitchNetwork } from 'wagmi';
 import { sepolia } from 'wagmi/chains';
 
 export default function Home() {
-  const { names, listings, loading, error } = useDomaSubgraph();
+  const { 
+    names, 
+    listings, 
+    loading, 
+    error, 
+    getNameActivities, 
+    getTokenActivities, 
+    getCommandStatus 
+  } = useDomaSubgraph();
   const { listings: marketplaceListings } = useDomaMarketplace();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -40,7 +48,7 @@ export default function Home() {
   const searchableItems = [
     // Add tokenized names as searchable items
     ...names.map(name => ({
-      type: 'tokenized_name',
+      type: 'tokenized_name' as const,
       id: name.name,
       name: name.name,
       registrar: name.registrar?.name || 'Unknown',
@@ -53,7 +61,7 @@ export default function Home() {
     })),
     // Add marketplace listings
     ...allListings.map(listing => ({
-      type: 'listing',
+      type: 'listing' as const,
       id: listing.id,
       name: 'token' in listing ? listing.token?.name : listing.name,
       registrar: 'Doma Marketplace',
@@ -288,6 +296,9 @@ export default function Home() {
         isOpen={isDetailsModalOpen} 
         onClose={() => setIsDetailsModalOpen(false)} 
         domain={selectedDomain}
+        getNameActivities={getNameActivities}
+        getTokenActivities={getTokenActivities}
+        getCommandStatus={getCommandStatus}
       />
     </div>
   );
