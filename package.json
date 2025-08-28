@@ -1,0 +1,58 @@
+{
+  "name": "domainfi-auction-marketplace",
+  "version": "1.0.0",
+  "description": "Decentralized auction platform for tokenized domains built on Doma Protocol",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test:doma": "ts-node test-doma-simple.ts",
+    "type-check": "tsc --noEmit",
+    "deploy:sepolia": "hardhat run scripts/deploy-sepolia.js --network sepolia",
+    "deploy:testnet": "hardhat run scripts/deploy.js --network testnet",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "node": "hardhat node"
+  },
+  "dependencies": {
+    "@apollo/client": "^3.8.0",
+    "@doma-protocol/orderbook-sdk": "^0.1.3",
+    "@headlessui/react": "^2.2.7",
+    "@rainbow-me/rainbowkit": "^1.3.0",
+    "autoprefixer": "^10.4.0",
+    "clsx": "^2.0.0",
+    "date-fns": "^2.30.0",
+    "ethers": "^6.8.0",
+    "framer-motion": "^10.16.0",
+    "graphql": "^16.8.0",
+    "lucide-react": "^0.292.0",
+    "next": "14.0.0",
+    "postcss": "^8.4.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hot-toast": "^2.4.0",
+    "socket.io-client": "^4.7.0",
+    "tailwindcss": "^3.3.0",
+    "viem": "^1.19.0",
+    "wagmi": "^1.4.0"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@openzeppelin/contracts": "^5.0.0",
+    "@types/node": "^20.19.11",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "dotenv": "^16.3.0",
+    "eslint": "^8.51.0",
+    "eslint-config-next": "14.0.0",
+    "hardhat": "^2.17.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
