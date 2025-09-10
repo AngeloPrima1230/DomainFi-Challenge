@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 
 /**
  * @title DomainAuction
@@ -12,7 +11,6 @@ import "@openzeppelin/contracts/utils/Counters.sol";
  * Supports English, Dutch, and Sealed Bid auctions
  */
 contract DomainAuction is ReentrancyGuard, Ownable {
-    using Counters for Counters.Counter;
 
     // Auction types
     enum AuctionType {
@@ -88,7 +86,7 @@ contract DomainAuction is ReentrancyGuard, Ownable {
     event AuctionCancelled(uint256 indexed auctionId);
 
     // State variables
-    Counters.Counter private _auctionIds;
+    uint256 private _auctionIds;
     mapping(uint256 => Auction) public auctions;
     mapping(uint256 => mapping(address => SealedBid)) public sealedBids;
     mapping(uint256 => address[]) public auctionBidders;
@@ -105,8 +103,8 @@ contract DomainAuction is ReentrancyGuard, Ownable {
     uint256 public constant DUTCH_PRICE_DECREASE_INTERVAL = 10 minutes;
     uint256 public constant DUTCH_PRICE_DECREASE_AMOUNT = 5; // 5% decrease
 
-    constructor() {
-        _auctionIds.increment(); // Start from 1
+    constructor() Ownable(msg.sender) {
+        _auctionIds = 1; // Start from 1
     }
 
     /**
@@ -134,8 +132,8 @@ contract DomainAuction is ReentrancyGuard, Ownable {
         // Transfer NFT to auction contract
         IERC721(nftContract).transferFrom(msg.sender, address(this), tokenId);
 
-        uint256 auctionId = _auctionIds.current();
-        _auctionIds.increment();
+        uint256 auctionId = _auctionIds;
+        _auctionIds++;
 
         auctions[auctionId] = Auction({
             auctionId: auctionId,
