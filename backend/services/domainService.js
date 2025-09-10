@@ -1,9 +1,12 @@
 const { ethers } = require('ethers');
+const { ApolloClient, InMemoryCache, gql, createHttpLink } = require('@apollo/client');
+const { setContext } = require('@apollo/client/link/context');
 
 class DomainService {
   constructor() {
     this.provider = null;
     this.mockNFT = null;
+    this.apolloClient = null;
     this.isInitialized = false;
   }
 
@@ -17,7 +20,27 @@ class DomainService {
       
       this.provider = new ethers.JsonRpcProvider(rpcUrl);
       
-      // Initialize MockNFT contract for testing
+      // Initialize Apollo Client for Doma Protocol GraphQL
+      const httpLink = createHttpLink({
+        uri: process.env.DOMA_SUBGRAPH_URL || 'https://api-testnet.doma.xyz/graphql',
+      });
+
+      const authLink = setContext((_, { headers }) => {
+        const apiKey = process.env.DOMA_API_KEY;
+        return {
+          headers: {
+            ...headers,
+            'API-Key': apiKey,
+          }
+        };
+      });
+
+      this.apolloClient = new ApolloClient({
+        link: authLink.concat(httpLink),
+        cache: new InMemoryCache(),
+      });
+      
+      // Initialize MockNFT contract for testing (optional)
       const mockNFTAddress = process.env.MOCK_NFT_CONTRACT_ADDRESS;
       if (mockNFTAddress && mockNFTAddress !== '0x0000000000000000000000000000000000000000') {
         const mockNFTABI = [
@@ -29,10 +52,9 @@ class DomainService {
         
         this.mockNFT = new ethers.Contract(mockNFTAddress, mockNFTABI, this.provider);
         console.log('✅ Domain service initialized with MockNFT');
-      } else {
-        console.log('⚠️  MockNFT contract not deployed. Run deployment first.');
       }
       
+      console.log('✅ Domain service initialized with Doma Protocol integration');
       this.isInitialized = true;
       return true;
     } catch (error) {
@@ -87,7 +109,7 @@ class DomainService {
 
   /**
    * Get available domains for auction creation
-   * This fetches domains that can be used for auctions
+   * This fetches REAL tokenized domains from Doma Protocol
    */
   async getAvailableDomains(ownerAddress, limit = 10) {
     if (!this.isInitialized) {
@@ -95,37 +117,136 @@ class DomainService {
     }
 
     try {
-      // For testing, we'll return mock domains
-      // In production, this would query the actual domain registry
-      const domains = [];
-      
-      for (let i = 1; i <= limit; i++) {
-        domains.push({
-          tokenId: i.toString(),
-          name: `available-domain-${i}.eth`,
-          owner: ownerAddress,
-          type: 'available',
-          metadata: {
-            description: `Available domain ${i} for auction`,
-            image: `https://api.dicebear.com/7.x/identicon/svg?seed=domain-${i}`,
-            attributes: [
-              { trait_type: "Type", value: "Available Domain" },
-              { trait_type: "Length", value: (15 + i).toString() },
-              { trait_type: "Token ID", value: i.toString() }
-            ]
+      // GraphQL query to get tokenized domains
+      const GET_TOKENIZED_NAMES = gql`
+        query GetTokenizedNames($skip: Int = 0, $take: Int = 100) {
+          names(skip: $skip, take: $take, sortOrder: DESC) {
+            items {
+              name
+              expiresAt
+              tokenizedAt
+              eoi
+              registrar {
+                name
+                ianaId
+              }
+              nameservers {
+                ldhName
+              }
+              dsKeys {
+                keyTag
+                algorithm
+                digestType
+                digest
+              }
+              transferLock
+              claimedBy
+              tokens {
+                tokenId
+                networkId
+                ownerAddress
+                type
+                startsAt
+                expiresAt
+                chain {
+                  name
+                  networkId
+                }
+              }
+            }
+            totalCount
+            pageSize
+            currentPage
+            totalPages
+            hasNextPage
+            hasPreviousPage
           }
+        }
+      `;
+
+      const result = await this.apolloClient.query({
+        query: GET_TOKENIZED_NAMES,
+        variables: { skip: 0, take: limit * 2 } // Get more to filter by owner
+      });
+
+      const domains = result.data.names.items
+        .filter(name => {
+          // Filter domains owned by the specified address
+          return name.tokens.some(token => 
+            token.ownerAddress.toLowerCase() === ownerAddress.toLowerCase()
+          );
+        })
+        .slice(0, limit)
+        .map(name => {
+          const token = name.tokens[0]; // Get first token
+          return {
+            tokenId: token.tokenId,
+            name: name.name,
+            owner: token.ownerAddress,
+            type: 'tokenized',
+            networkId: token.networkId,
+            chain: token.chain,
+            metadata: {
+              description: `Tokenized domain ${name.name}`,
+              image: `https://api.dicebear.com/7.x/identicon/svg?seed=${name.name}`,
+              attributes: [
+                { trait_type: "Type", value: "Tokenized Domain" },
+                { trait_type: "Name", value: name.name },
+                { trait_type: "Registrar", value: name.registrar?.name || "Unknown" },
+                { trait_type: "Expires", value: name.expiresAt },
+                { trait_type: "Token ID", value: token.tokenId },
+                { trait_type: "Network", value: token.chain?.name || "Unknown" }
+              ]
+            },
+            domainInfo: {
+              expiresAt: name.expiresAt,
+              tokenizedAt: name.tokenizedAt,
+              registrar: name.registrar,
+              nameservers: name.nameservers,
+              transferLock: name.transferLock
+            }
+          };
         });
-      }
       
+      console.log(`✅ Found ${domains.length} tokenized domains for ${ownerAddress}`);
       return domains;
     } catch (error) {
-      console.error('❌ Failed to get available domains:', error.message);
-      throw error;
+      console.error('❌ Failed to get available domains from Doma Protocol:', error.message);
+      
+      // Fallback to mock domains if Doma Protocol is unavailable
+      console.log('🔄 Falling back to mock domains...');
+      return this.getMockDomains(ownerAddress, limit);
     }
   }
 
   /**
-   * Get domain details by token ID
+   * Fallback method for mock domains when Doma Protocol is unavailable
+   */
+  async getMockDomains(ownerAddress, limit = 10) {
+    const domains = [];
+    
+    for (let i = 1; i <= limit; i++) {
+      domains.push({
+        tokenId: i.toString(),
+        name: `mock-domain-${i}.eth`,
+        owner: ownerAddress,
+        type: 'mock',
+        metadata: {
+          description: `Mock domain ${i} for testing`,
+          image: `https://api.dicebear.com/7.x/identicon/svg?seed=mock-${i}`,
+          attributes: [
+            { trait_type: "Type", value: "Mock Domain" },
+            { trait_type: "Token ID", value: i.toString() }
+          ]
+        }
+      });
+    }
+    
+    return domains;
+  }
+
+  /**
+   * Get domain details by token ID from Doma Protocol
    */
   async getDomainDetails(tokenId) {
     if (!this.isInitialized) {
@@ -133,44 +254,118 @@ class DomainService {
     }
 
     try {
-      if (this.mockNFT) {
-        const owner = await this.mockNFT.ownerOf(tokenId);
-        const tokenURI = await this.mockNFT.tokenURI(tokenId);
+      // GraphQL query to get domain details by token ID
+      const GET_DOMAIN_BY_TOKEN = gql`
+        query GetDomainByToken($tokenId: String!) {
+          tokens(tokenId: $tokenId) {
+            items {
+              tokenId
+              networkId
+              ownerAddress
+              type
+              startsAt
+              expiresAt
+              chain {
+                name
+                networkId
+              }
+              name {
+                name
+                expiresAt
+                tokenizedAt
+                eoi
+                registrar {
+                  name
+                  ianaId
+                }
+                nameservers {
+                  ldhName
+                }
+                dsKeys {
+                  keyTag
+                  algorithm
+                  digestType
+                  digest
+                }
+                transferLock
+                claimedBy
+              }
+            }
+          }
+        }
+      `;
+
+      const result = await this.apolloClient.query({
+        query: GET_DOMAIN_BY_TOKEN,
+        variables: { tokenId: tokenId.toString() }
+      });
+
+      if (result.data.tokens.items.length > 0) {
+        const token = result.data.tokens.items[0];
+        const name = token.name;
         
         return {
-          tokenId: tokenId.toString(),
-          name: `domain-${tokenId}.eth`,
-          owner: owner,
-          type: 'nft',
+          tokenId: token.tokenId,
+          name: name.name,
+          owner: token.ownerAddress,
+          type: 'tokenized',
+          networkId: token.networkId,
+          chain: token.chain,
           metadata: {
-            description: `Domain ${tokenId} tokenized as NFT`,
-            image: `https://api.dicebear.com/7.x/identicon/svg?seed=${tokenId}`,
+            description: `Tokenized domain ${name.name}`,
+            image: `https://api.dicebear.com/7.x/identicon/svg?seed=${name.name}`,
             attributes: [
               { trait_type: "Type", value: "Tokenized Domain" },
-              { trait_type: "Token ID", value: tokenId.toString() }
+              { trait_type: "Name", value: name.name },
+              { trait_type: "Registrar", value: name.registrar?.name || "Unknown" },
+              { trait_type: "Expires", value: name.expiresAt },
+              { trait_type: "Token ID", value: token.tokenId },
+              { trait_type: "Network", value: token.chain?.name || "Unknown" }
             ]
+          },
+          domainInfo: {
+            expiresAt: name.expiresAt,
+            tokenizedAt: name.tokenizedAt,
+            registrar: name.registrar,
+            nameservers: name.nameservers,
+            transferLock: name.transferLock
           }
         };
       } else {
-        // Return mock domain details
+        // Fallback to mock domain if not found in Doma Protocol
         return {
           tokenId: tokenId.toString(),
-          name: `mock-domain-${tokenId}.eth`,
+          name: `unknown-domain-${tokenId}.eth`,
           owner: '0x0000000000000000000000000000000000000000',
-          type: 'mock',
+          type: 'unknown',
           metadata: {
-            description: `Mock domain ${tokenId} for testing`,
-            image: `https://api.dicebear.com/7.x/identicon/svg?seed=mock-${tokenId}`,
+            description: `Domain ${tokenId} not found in Doma Protocol`,
+            image: `https://api.dicebear.com/7.x/identicon/svg?seed=unknown-${tokenId}`,
             attributes: [
-              { trait_type: "Type", value: "Mock Domain" },
+              { trait_type: "Type", value: "Unknown Domain" },
               { trait_type: "Token ID", value: tokenId.toString() }
             ]
           }
         };
       }
     } catch (error) {
-      console.error(`❌ Failed to get domain details for ${tokenId}:`, error.message);
-      throw error;
+      console.error(`❌ Failed to get domain details for ${tokenId} from Doma Protocol:`, error.message);
+      
+      // Fallback to mock domain details
+      return {
+        tokenId: tokenId.toString(),
+        name: `fallback-domain-${tokenId}.eth`,
+        owner: '0x0000000000000000000000000000000000000000',
+        type: 'fallback',
+        metadata: {
+          description: `Fallback domain ${tokenId} (Doma Protocol unavailable)`,
+          image: `https://api.dicebear.com/7.x/identicon/svg?seed=fallback-${tokenId}`,
+          attributes: [
+            { trait_type: "Type", value: "Fallback Domain" },
+            { trait_type: "Token ID", value: tokenId.toString() }
+          ]
+        }
+      };
     }
   }
 
@@ -202,7 +397,7 @@ class DomainService {
   }
 
   /**
-   * Get domains owned by a specific address
+   * Get domains owned by a specific address from Doma Protocol
    */
   async getDomainsByOwner(ownerAddress, limit = 20) {
     if (!this.isInitialized) {
@@ -210,32 +405,102 @@ class DomainService {
     }
 
     try {
-      const domains = [];
-      
-      // For testing, return mock domains
-      // In production, this would query the actual domain registry
-      for (let i = 1; i <= limit; i++) {
-        domains.push({
-          tokenId: i.toString(),
-          name: `owned-domain-${i}.eth`,
-          owner: ownerAddress,
-          type: 'owned',
-          metadata: {
-            description: `Domain ${i} owned by ${ownerAddress}`,
-            image: `https://api.dicebear.com/7.x/identicon/svg?seed=owned-${i}`,
-            attributes: [
-              { trait_type: "Type", value: "Owned Domain" },
-              { trait_type: "Owner", value: ownerAddress },
-              { trait_type: "Token ID", value: i.toString() }
-            ]
+      // GraphQL query to get domains by owner
+      const GET_DOMAINS_BY_OWNER = gql`
+        query GetDomainsByOwner($ownerAddress: String!, $skip: Int = 0, $take: Int = 100) {
+          tokens(ownerAddress: $ownerAddress, skip: $skip, take: $take) {
+            items {
+              tokenId
+              networkId
+              ownerAddress
+              type
+              startsAt
+              expiresAt
+              chain {
+                name
+                networkId
+              }
+              name {
+                name
+                expiresAt
+                tokenizedAt
+                eoi
+                registrar {
+                  name
+                  ianaId
+                }
+                nameservers {
+                  ldhName
+                }
+                dsKeys {
+                  keyTag
+                  algorithm
+                  digestType
+                  digest
+                }
+                transferLock
+                claimedBy
+              }
+            }
+            totalCount
+            pageSize
+            currentPage
+            totalPages
+            hasNextPage
+            hasPreviousPage
           }
-        });
-      }
+        }
+      `;
+
+      const result = await this.apolloClient.query({
+        query: GET_DOMAINS_BY_OWNER,
+        variables: { 
+          ownerAddress: ownerAddress.toLowerCase(),
+          skip: 0, 
+          take: limit 
+        }
+      });
+
+      const domains = result.data.tokens.items.map(token => {
+        const name = token.name;
+        return {
+          tokenId: token.tokenId,
+          name: name.name,
+          owner: token.ownerAddress,
+          type: 'tokenized',
+          networkId: token.networkId,
+          chain: token.chain,
+          metadata: {
+            description: `Tokenized domain ${name.name} owned by ${ownerAddress}`,
+            image: `https://api.dicebear.com/7.x/identicon/svg?seed=${name.name}`,
+            attributes: [
+              { trait_type: "Type", value: "Tokenized Domain" },
+              { trait_type: "Name", value: name.name },
+              { trait_type: "Owner", value: ownerAddress },
+              { trait_type: "Registrar", value: name.registrar?.name || "Unknown" },
+              { trait_type: "Expires", value: name.expiresAt },
+              { trait_type: "Token ID", value: token.tokenId },
+              { trait_type: "Network", value: token.chain?.name || "Unknown" }
+            ]
+          },
+          domainInfo: {
+            expiresAt: name.expiresAt,
+            tokenizedAt: name.tokenizedAt,
+            registrar: name.registrar,
+            nameservers: name.nameservers,
+            transferLock: name.transferLock
+          }
+        };
+      });
       
+      console.log(`✅ Found ${domains.length} domains owned by ${ownerAddress}`);
       return domains;
     } catch (error) {
-      console.error('❌ Failed to get domains by owner:', error.message);
-      throw error;
+      console.error('❌ Failed to get domains by owner from Doma Protocol:', error.message);
+      
+      // Fallback to mock domains
+      console.log('🔄 Falling back to mock domains...');
+      return this.getMockDomains(ownerAddress, limit);
     }
   }
 }

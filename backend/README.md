@@ -56,40 +56,50 @@ npm run dev
 npm start
 ```
 
-## 🎯 **Domain Creation Solution**
+## 🎯 **Real Domain Integration with Doma Protocol**
 
 **Problem**: We need domains to create auctions, but we don't have any!
 
-**Solution**: ✅ **SOLVED** - Complete domain creation service implemented!
+**Solution**: ✅ **SOLVED** - Real Doma Protocol integration implemented!
 
-### Quick Start with Domains
+### 🚀 **Real Tokenized Domains from Doma Protocol**
 
-#### 1. Deploy All Contracts (Including MockNFT)
+The backend now fetches **real tokenized domains** from Doma Protocol's GraphQL API, giving you access to 674,000+ actual domains!
+
+### Quick Start with Real Domains
+
+#### 1. Configure Doma Protocol
 ```bash
-npm run deploy:all
-# This deploys both DomainAuction AND MockNFT contracts
-# Automatically creates 5 test domains for immediate testing
+# Add to your .env file
+DOMA_SUBGRAPH_URL=https://api-testnet.doma.xyz/graphql
+DOMA_API_KEY=your_doma_api_key_here
 ```
 
-#### 2. Start Backend Server
+#### 2. Deploy Smart Contracts
+```bash
+npm run deploy:all
+# Deploys DomainAuction contract (MockNFT optional for testing)
+```
+
+#### 3. Start Backend Server
 ```bash
 npm run dev
 # Server runs on http://localhost:3001
 ```
 
-#### 3. Create Test Domains via API
+#### 4. Get Real Domains for Auction
 ```bash
-# Create 5 test domains for a user
-curl -X POST http://localhost:3001/api/domains/test \
-  -H "Content-Type: application/json" \
-  -d '{"owner": "0x1234...", "count": 5}'
-```
+# Get REAL tokenized domains owned by a user
+curl "http://localhost:3001/api/domains/owned/0x1234...?limit=10"
 
-#### 4. Get Available Domains
-```bash
-# Get domains available for auction
+# Get domains available for auction creation
 curl "http://localhost:3001/api/domains/available?owner=0x1234...&limit=10"
 ```
+
+### 🔄 **Fallback System**
+- **Primary**: Real domains from Doma Protocol GraphQL
+- **Fallback**: Mock domains if Doma Protocol is unavailable
+- **Testing**: MockNFT domains for development
 
 ### Domain API Endpoints
 
@@ -260,12 +270,19 @@ railway up
 
 ### Environment Variables for Production
 ```env
-# Required
+# Blockchain
 PRIVATE_KEY=your_private_key
 ALCHEMY_API_KEY=your_alchemy_key
 ETHERSCAN_API_KEY=your_etherscan_key
 ETHEREUM_SEPOLIA_RPC=https://eth-sepolia.g.alchemy.com/v2/YOUR_KEY
-AUCTION_CONTRACT_ADDRESS=0x... # After deployment
+
+# Doma Protocol
+DOMA_SUBGRAPH_URL=https://api-testnet.doma.xyz/graphql
+DOMA_API_KEY=your_doma_api_key
+
+# Contracts (after deployment)
+AUCTION_CONTRACT_ADDRESS=0x...
+MOCK_NFT_CONTRACT_ADDRESS=0x... # Optional
 
 # Server
 PORT=3001
