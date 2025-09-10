@@ -32,6 +32,12 @@ export default function ActivityTab({
   }, [activeTab, domainName, tokenId]);
 
   const fetchNameActivities = async () => {
+    // Don't fetch if domain name is empty or invalid
+    if (!domainName || domainName === '' || domainName === 'Unknown Domain') {
+      setNameActivities([]);
+      return;
+    }
+    
     setLoading(true);
     try {
       const result = await getNameActivities(domainName);
@@ -57,7 +63,7 @@ export default function ActivityTab({
   };
 
   const fetchTokenActivities = async () => {
-    if (!tokenId) return;
+    if (!tokenId || tokenId === '') return;
     
     setLoading(true);
     try {

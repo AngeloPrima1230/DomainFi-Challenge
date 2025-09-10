@@ -6,6 +6,7 @@ import { useDomaMarketplace } from './hooks/useDomaMarketplace';
 import AuctionCard from './components/AuctionCard';
 import CreateAuctionModal from './components/CreateAuctionModal';
 import DomainDetailsModal from './components/DomainDetailsModal';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useNetwork, useSwitchNetwork } from 'wagmi';
 import { sepolia } from 'wagmi/chains';
@@ -43,6 +44,7 @@ export default function Home() {
   const [filter, setFilter] = useState('all');
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   
   // Advanced filters state
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
@@ -679,15 +681,40 @@ export default function Home() {
             )}
           </div>
 
-          {/* Create Auction Button */}
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
-          >
-            Create New Auction
-          </button>
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
+            >
+              Create New Auction
+            </button>
+            <button
+              onClick={() => setShowAnalytics(!showAnalytics)}
+              className={`px-8 py-3 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg ${
+                showAnalytics
+                  ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
+                  : 'bg-white/10 backdrop-blur-sm border border-white/20 text-gray-300 hover:bg-white/20 hover:border-white/30'
+              }`}
+            >
+              {showAnalytics ? 'Hide Analytics' : 'View Analytics'}
+            </button>
+          </div>
         </div>
       </section>
+
+      {/* Analytics Dashboard */}
+      {showAnalytics && (
+        <section className="px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-7xl mx-auto">
+            <AnalyticsDashboard 
+              searchableItems={searchableItems}
+              allListings={allListings}
+              names={names}
+            />
+          </div>
+        </section>
+      )}
 
       {/* Listings Section */}
       <section className="px-4 sm:px-6 lg:px-8 pb-16">

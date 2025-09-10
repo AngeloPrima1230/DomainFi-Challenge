@@ -46,7 +46,7 @@ export default function DomainDetailsModal({
 }: DomainDetailsModalProps) {
   if (!isOpen || !domain) return null;
 
-  const domainName = domain.name || domain.token?.name || 'Unknown Domain';
+  const domainName = domain.name || domain.token?.name || '';
   const price = domain.price ? parseFloat(domain.price) : 0;
   const currency = domain.currency || 'ETH';
   const status = domain.status || 'active';
@@ -320,7 +320,7 @@ export default function DomainDetailsModal({
           )}
 
           {/* Activity History Tab */}
-          {activeTab === 'activities' && getNameActivities && getTokenActivities && getCommandStatus && (
+          {activeTab === 'activities' && getNameActivities && getTokenActivities && getCommandStatus && domainName && domainName !== '' && (
             <ActivityTab
               domainName={domainName}
               tokenId={tokens[0]?.tokenId}
@@ -328,6 +328,14 @@ export default function DomainDetailsModal({
               getTokenActivities={getTokenActivities}
               getCommandStatus={getCommandStatus}
             />
+          )}
+          
+          {/* Show message if no valid domain name for activities */}
+          {activeTab === 'activities' && (!domainName || domainName === '') && (
+            <div className="text-center py-8">
+              <div className="text-gray-400 mb-2">📝</div>
+              <p className="text-gray-400">No domain name available for activity history</p>
+            </div>
           )}
         </div>
 
