@@ -1,16 +1,17 @@
-# DomainFi Auction Marketplace
+# Taghaus - Decentralized Domain Auction Marketplace
 
-A decentralized auction platform for tokenized domains built on Doma Protocol. This project enables transparent price discovery and instant settlement for domain NFT trading.
+**Taghaus** is an innovative auction platform that revolutionizes domain trading through transparent price discovery and advanced auction mechanisms. Built on Doma Protocol, Taghaus enables premium domain auctions with custom strategies that boost participation and reduce information asymmetry between sellers and buyers.
 
 ## 🎯 Project Overview
 
-This auction marketplace addresses **Track 1: On-Chain Auctions & Price Discovery** by providing:
+Taghaus addresses the critical need for **transparent price discovery** in the domain marketplace by providing:
 
-- **Transparent Price Discovery**: Real-time bidding with on-chain settlement
-- **Multiple Auction Types**: English, Dutch, and Sealed Bid auctions
-- **Instant Settlement**: Winners receive domain NFTs immediately after auction close
-- **Gamified Features**: XP system for active bidders and portfolio tracking
-- **Doma Protocol Integration**: Full compliance with ICANN regulations
+- **Advanced Auction Mechanisms**: English, Dutch, and Sealed Bid auctions with custom strategies
+- **Transparent Price Discovery**: Real-time bidding with on-chain settlement and oracle integration
+- **Gamified Participation**: Dynamic reserve pricing and engagement incentives
+- **Reduced Information Asymmetry**: Comprehensive domain analytics and market insights
+- **Instant Settlement**: Automated NFT transfers with optimized fee structures
+- **Doma Protocol Integration**: Full compliance with ICANN regulations and cross-chain support
 
 ## 🏗️ Architecture
 
@@ -24,23 +25,32 @@ Real-time Updates Settlement         Cross-chain Bridging
 
 ## 🚀 Key Features
 
-### Auction Types
-- **English Auction**: Traditional ascending price with time limit
-- **Dutch Auction**: Descending price until first bidder
-- **Sealed Bid**: Blind bidding with highest bidder wins
-- **Portfolio Auction**: Bundle multiple domains in single auction
+### Advanced Auction Mechanisms
+- **English Auction**: Traditional ascending price with time limits and reserve pricing
+- **Dutch Auction**: Descending price mechanism with dynamic reserve calculations
+- **Sealed Bid**: Blind bidding with commitment-reveal scheme for optimal price discovery
+- **Gamified Auctions**: XP system, leaderboards, and participation rewards
+- **Auto-listing**: Intelligent expiring domain detection and automatic auction creation
+
+### Transparent Price Discovery
+- **Oracle Integration**: Real-time domain valuation using Doma oracles
+- **Market Analytics**: Comprehensive price history and trend analysis
+- **Dynamic Reserves**: AI-powered reserve price suggestions based on market data
+- **Fee Optimization**: Transparent fee structures with staking rewards
+- **Cross-chain Settlement**: Multi-network support for optimal transaction costs
 
 ### Doma Protocol Integration
-- **Domain Tokenization**: Convert ICANN domains to NFTs
-- **State Sync**: Bi-directional synchronization with DNS infrastructure
+- **Domain Tokenization**: Convert ICANN domains to NFTs with full metadata
+- **State Synchronization**: Bi-directional DNS ↔ blockchain sync
 - **Cross-chain Support**: Bridge domains across multiple blockchains
 - **Compliance**: Maintains ICANN regulations and UDRP enforcement
+- **Real-time Updates**: Live domain status and ownership changes
 
 ### User Experience
-- **Real-time Bidding**: Live updates during active auctions
-- **Portfolio Management**: Track owned domains and auction history
-- **Gamification**: XP points for successful bids and community engagement
-- **Notifications**: Alerts for auction events and domain opportunities
+- **Real-time Bidding**: Live updates with WebSocket integration
+- **Portfolio Management**: Advanced analytics and performance tracking
+- **Smart Notifications**: Customizable alerts for auction events
+- **Mobile-First Design**: Responsive interface for all devices
 
 ## 🛠️ Technology Stack
 
@@ -157,39 +167,51 @@ This project integrates with Doma Protocol through:
 3. **Smart Contracts API**: Direct interaction with domain NFTs
 4. **State Sync**: Automatic Web2 ↔ Web3 domain synchronization
 
-## 📊 Judging Criteria Alignment
+## 📊 Innovation Highlights
 
-### Innovation (40%)
-- **Dynamic Auction Mechanisms**: Dutch auctions with falling prices
-- **Gamification**: XP system and leaderboards for bidders
-- **Portfolio Auctions**: Bundle multiple domains for efficiency
-- **AI-Powered Pricing**: ML-based reserve price suggestions
+### Advanced Auction Mechanisms (40%)
+- **Dynamic Dutch Auctions**: Falling price mechanisms with intelligent reserve calculations
+- **Sealed Bid Innovation**: Commitment-reveal scheme for optimal price discovery
+- **Gamified Participation**: XP system, leaderboards, and engagement rewards
+- **Auto-listing Intelligence**: Smart detection of expiring domains for automatic auction creation
+- **Custom Strategies**: Configurable auction parameters for different domain types
 
-### Doma Integration (30%)
-- **Full Protocol Usage**: Subgraph, Marketplace API, Smart Contracts API
-- **Cross-chain Support**: Bridge domains across multiple blockchains
-- **State Synchronization**: Real-time DNS ↔ blockchain sync
-- **Compliance Features**: UDRP enforcement and ICANN compliance
+### Transparent Price Discovery (30%)
+- **Oracle Integration**: Real-time domain valuation using Doma Protocol oracles
+- **Market Analytics**: Comprehensive price history, trends, and market insights
+- **Dynamic Reserve Pricing**: AI-powered suggestions based on historical data
+- **Fee Optimization**: Transparent fee structures with staking-based discounts
+- **Cross-chain Settlement**: Multi-network support for optimal transaction costs
 
-### Usability (20%)
-- **Intuitive UI**: Clean, modern interface for domain trading
-- **Mobile Responsive**: Works seamlessly on all devices
-- **Real-time Updates**: Live bidding and auction status
-- **Clear Documentation**: Easy setup and usage instructions
+### Doma Protocol Integration (20%)
+- **Full Protocol Utilization**: Subgraph, Marketplace API, Smart Contracts API
+- **Cross-chain Support**: Bridge domains across multiple blockchains seamlessly
+- **State Synchronization**: Real-time DNS ↔ blockchain synchronization
+- **Compliance Features**: UDRP enforcement and ICANN regulation compliance
+- **Real-time Updates**: Live domain status and ownership change notifications
 
-### Demo Quality (10%)
-- **Complete Flow**: Tokenization → Listing → Bidding → Settlement
-- **Professional Presentation**: Clear explanation of features
-- **Technical Depth**: Demonstrates understanding of Doma Protocol
+### User Experience Excellence (10%)
+- **Intuitive Interface**: Clean, modern design optimized for domain trading
+- **Mobile-First Design**: Seamless experience across all devices
+- **Real-time Updates**: Live bidding and auction status with WebSocket integration
+- **Professional Documentation**: Comprehensive setup and usage guides
 
 ## 🎮 Demo Walkthrough
 
-1. **Domain Tokenization**: Show how to convert a domain to NFT
-2. **Auction Creation**: Demonstrate listing process and auction types
-3. **Live Bidding**: Real-time bidding with multiple participants
-4. **Settlement**: Instant NFT transfer to winner
-5. **Cross-chain Bridge**: Move domain to different blockchain
-6. **Portfolio Management**: Track owned domains and auction history
+### Complete Auction Flow
+1. **Domain Discovery**: Browse 674,000+ tokenized domains with advanced filtering
+2. **Auction Creation**: Create custom auctions with dynamic reserve pricing
+3. **Live Bidding**: Real-time bidding with multiple auction types
+4. **Price Discovery**: Transparent price discovery through sealed bids and Dutch auctions
+5. **Instant Settlement**: Automated NFT transfer with optimized fee structures
+6. **Cross-chain Bridge**: Seamless domain transfers across multiple blockchains
+7. **Portfolio Analytics**: Comprehensive tracking and performance insights
+
+### Key Differentiators
+- **Reduced Information Asymmetry**: Comprehensive market data and analytics
+- **Gamified Participation**: Engagement rewards and leaderboard systems
+- **Custom Auction Strategies**: Configurable parameters for different domain types
+- **Oracle-Powered Pricing**: Real-time valuation and dynamic reserve calculations
 
 ## 🚀 Current Status - FULLY WORKING!
 
