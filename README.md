@@ -108,8 +108,8 @@ NEXT_PUBLIC_DOMA_API_KEY=your_api_key_here
 ### Environment Variables
 ```env
 # Doma Protocol API Keys
-NEXT_PUBLIC_DOMA_API_KEY=v1.8f6347c32950c1bfaedc4b29676fcaa14a6586ed8586338b24fdfc6c69df8b02
-NEXT_PUBLIC_DOMA_SUBGRAPH_URL=https://api-testnet.doma.xyz/graphql
+NEXT_PUBLIC_DOMA_API_KEY=******************
+NEXT_PUBLIC_DOMA_SUBGRAPH_URL=********************
 
 # Smart Contracts
 AUCTION_CONTRACT_ADDRESS=0x...
@@ -117,7 +117,7 @@ DOMAIN_NFT_CONTRACT_ADDRESS=0x...
 
 # Frontend
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_CHAIN_ID=11155111
+NEXT_PUBLIC_CHAIN_ID=********
 ```
 
 ### 🚨 CRITICAL API FIX - How We Solved the Authentication Issue

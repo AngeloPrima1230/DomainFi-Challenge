@@ -274,7 +274,7 @@ export default function Home() {
       .flatMap(item => item.networks)
       .filter(Boolean)
       .map(network => getNetworkName(network))
-  )];
+  )];     
   
   // Add common networks that users might want to filter by
   const commonNetworks = [

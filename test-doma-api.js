@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const { ApolloClient, InMemoryCache, gql, createHttpLink, from } = require('@apollo/client');
 const { setContext } = require('@apollo/client/link/context');
 
@@ -79,7 +81,7 @@ const httpLink = createHttpLink({
 });
 
 const authLink = setContext((_, { headers }) => {
-  const apiKey = 'v1.8f6347c32950c1bfaedc4b29676fcaa14a6586ed8586338b24fdfc6c69df8b02';
+  const apiKey = process.env.DOMA_API_KEY;
   
   return {
     headers: {

@@ -264,12 +264,11 @@ const httpLink = createHttpLink({
 
 // Add authentication headers - Use the correct API-Key header
 const authLink = setContext((_, { headers }) => {
-  const apiKey = process.env.NEXT_PUBLIC_DOMA_API_KEY || 'v1.8f6347c32950c1bfaedc4b29676fcaa14a6586ed8586338b24fdfc6c69df8b02';
-  
+  const apiKey = process.env.NEXT_PUBLIC_DOMA_API_KEY || process.env.DOMA_API_KEY;
   return {
     headers: {
       ...headers,
-      'API-Key': apiKey,
+      ...(apiKey ? { 'API-Key': apiKey as string } : {}),
       'Content-Type': 'application/json',
     }
   };
