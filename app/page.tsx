@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDomaSubgraph } from './hooks/useDomaSubgraph';
 import { useDomaMarketplace } from './hooks/useDomaMarketplace';
 import AuctionCard from './components/AuctionCard';
@@ -34,13 +34,22 @@ export default function Home() {
     error, 
     getNameActivities, 
     getTokenActivities, 
-    getCommandStatus 
+    getCommandStatus,
+    namesTotalCount,
+    fetchNameCount,
+    fetchTokenizedNames,
+    fetchListings
   } = useDomaSubgraph();
   const { listings: marketplaceListings } = useDomaMarketplace();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedDomain, setSelectedDomain] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [namesSkip, setNamesSkip] = useState(0);
+  const [listingsSkip, setListingsSkip] = useState(0);
+  const pageSize = 15;
+  const [inputValue, setInputValue] = useState('');
+  const [searchTotalCount, setSearchTotalCount] = useState(0);
   const [filter, setFilter] = useState('all');
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -201,10 +210,10 @@ export default function Home() {
   // Filter searchable items with advanced filters
   const filteredItems = searchableItems.filter(item => {
     // Basic search filter
-    const matchesSearch = searchTerm === '' ||
-      item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.registrar?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.owner?.toLowerCase().includes(searchTerm.toLowerCase());
+    // const matchesSearch = searchTerm === '' ||
+    //   item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    //   item.registrar?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    //   item.owner?.toLowerCase().includes(searchTerm.toLowerCase());
 
     // Basic status filter
     let matchesFilter = true;
@@ -241,7 +250,8 @@ export default function Home() {
     const matchesTldFilter = !advancedFilters.tldFilter || 
       item.tld?.toLowerCase().includes(advancedFilters.tldFilter.toLowerCase());
 
-    return matchesSearch && matchesFilter && matchesPriceRange && matchesExpirationFilter && 
+    // return matchesSearch && matchesFilter && matchesPriceRange && matchesExpirationFilter && 
+    return matchesFilter && matchesPriceRange && matchesExpirationFilter && 
            matchesRegistrarFilter && matchesNetworkFilter && matchesOwnerFilter && matchesTldFilter;
   });
 
@@ -274,7 +284,7 @@ export default function Home() {
       .flatMap(item => item.networks)
       .filter(Boolean)
       .map(network => getNetworkName(network))
-  )];     
+  )];
   
   // Add common networks that users might want to filter by
   const commonNetworks = [
@@ -312,8 +322,33 @@ export default function Home() {
     setIsDetailsModalOpen(true);
   };
 
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMoreNames, setHasMoreNames] = useState(false);
+  const [hasMoreListings, setHasMoreListings] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  const handleSearch = async () => {
+    const term = inputValue.trim();
+    setSearchTerm(term);
+    setNamesSkip(0);
+    setListingsSkip(0);
+
+    const namesRes = await fetchTokenizedNames(term, 0, pageSize, false);
+    setSearchTotalCount(namesRes?.totalCount ?? 0);         // backend total
+    setHasMoreNames(!!namesRes?.hasNextPage);
+
+    const listingsRes = await fetchListings(term, 0, pageSize, false);
+    setHasMoreListings(!!listingsRes?.hasNextPage);
+  };
+
   const clearAllFilters = () => {
     setSearchTerm('');
+    setInputValue('');
+    setSearchTotalCount(0);
+    setHasMoreNames(false);
+    setHasMoreListings(false);
+    setNamesSkip(0);
+    setListingsSkip(0);
     setFilter('all');
     setAdvancedFilters({
       priceRange: { min: '', max: '' },
@@ -329,11 +364,47 @@ export default function Home() {
 
   const stats = {
     activeListings: allListings.filter(l => 'status' in l ? l.status === 'active' : true).length,
-    tokenizedDomains: names.length,
+    tokenizedDomains: namesTotalCount,
     totalVolume: allListings.reduce((sum, l) => sum + parseFloat(l.price || '0'), 0).toFixed(2),
     listedDomains: allListings.length,
-    searchResults: sortedItems.length
+    searchResults: searchTotalCount
   };
+
+  // load more (e.g., in IntersectionObserver callback)
+  const loadMore = async () => {
+    if (isLoadingMore) return;
+    if (!hasMoreNames && !hasMoreListings) return;
+
+    setIsLoadingMore(true);
+
+    const nextNamesSkip = names.length;
+    const nextListingsSkip = listings.length;
+
+    const [namesRes, listingsRes] = await Promise.all([
+      hasMoreNames ? fetchTokenizedNames(searchTerm, nextNamesSkip, pageSize, true) : Promise.resolve(null),
+      hasMoreListings ? fetchListings(searchTerm, nextListingsSkip, pageSize, true) : Promise.resolve(null),
+    ]);
+
+    if (namesRes) setHasMoreNames(!!namesRes.hasNextPage);
+    if (listingsRes) setHasMoreListings(!!listingsRes.hasNextPage);
+
+    setIsLoadingMore(false);
+  };
+
+  useEffect(() => {
+    if (!loadMoreRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting) loadMore();
+      },
+      { root: null, rootMargin: '200px', threshold: 0 } // prefetch a bit early
+    );
+
+    observer.observe(loadMoreRef.current);
+    return () => observer.disconnect();
+  }, [loadMoreRef.current, hasMoreNames, hasMoreListings, isLoadingMore, searchTerm, names.length, listings.length]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -412,9 +483,10 @@ export default function Home() {
               <div className="flex-1 relative">
                 <input
                   type="text"
-                  placeholder="Search domains, registrars, or owners..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search domain name"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
                   className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <svg className="absolute right-3 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -422,14 +494,10 @@ export default function Home() {
                 </svg>
               </div>
               <button
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-                  showAdvancedFilters
-                    ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg'
-                    : 'bg-white/10 backdrop-blur-sm border border-white/20 text-gray-300 hover:bg-white/20 hover:border-white/30'
-                }`}
+                onClick={handleSearch}
+                className="px-6 py-3 rounded-lg font-medium transition-all duration-200 bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg"
               >
-                {showAdvancedFilters ? 'Hide Filters' : 'Advanced Filters'}
+                Search
               </button>
             </div>
 
@@ -474,6 +542,15 @@ export default function Home() {
                 }`}
               >
                 Sold
+              </button>
+              <button
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${showAdvancedFilters
+                  ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg'
+                  : 'bg-white/10 backdrop-blur-sm border border-white/20 text-gray-300 hover:bg-white/20 hover:border-white/30'
+                  }`}
+              >
+                {showAdvancedFilters ? 'Hide Filters' : 'Advanced Filters'}
               </button>
             </div>
 
@@ -719,12 +796,7 @@ export default function Home() {
       {/* Listings Section */}
       <section className="px-4 sm:px-6 lg:px-8 pb-16">
         <div className="max-w-7xl mx-auto">
-          {loading ? (
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-              <p className="text-gray-400 mt-4">Loading domains...</p>
-            </div>
-          ) : error ? (
+          {error ? (
             <div className="text-center py-12">
               <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6 max-w-md mx-auto">
                 <p className="text-red-400">Error loading data: {error}</p>
@@ -747,15 +819,23 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sortedItems.map((item, index) => (
-                <AuctionCard 
-                  key={item.id || index} 
-                  auction={item} 
-                  onViewDetails={() => handleViewDetails(item)}
-                />
-              ))}
-            </div>
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {sortedItems.map((item, index) => (
+                      <AuctionCard
+                        key={item.id || index}
+                        auction={item}
+                        onViewDetails={() => handleViewDetails(item)}
+                      />
+                    ))}
+                  </div>
+                  {loading ? (
+                    <div className="text-center py-12">
+                      <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                      <p className="text-gray-400 mt-4">Loading domains...</p>
+                    </div>
+                  ) : <div ref={loadMoreRef} style={{ height: 1 }} />}
+                </>
           )}
         </div>
       </section>
