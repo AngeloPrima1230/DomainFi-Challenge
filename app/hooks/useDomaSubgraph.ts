@@ -4,8 +4,8 @@ import { setContext } from '@apollo/client/link/context';
 
 // GraphQL query for tokenized names using Doma Protocol
 const GET_TOKENIZED_NAMES = gql`
-  query GetTokenizedNames($skip: Int = 0, $take: Int = 100) {
-    names(skip: $skip, take: $take, sortOrder: DESC) {
+  query GetTokenizedNames($skip: Int = 0, $take: Int = 100, $name: String) {
+    names(skip: $skip, take: $take, sortOrder: DESC, name: $name) {
       items {
         name
         expiresAt
@@ -119,6 +119,15 @@ const GET_LISTINGS = gql`
         expiresAt
         createdAt
         updatedAt
+        token {
+          tokenId
+          name
+          ownerAddress
+          chain {
+            name
+            networkId
+          }
+        }
       }
       totalCount
       pageSize
@@ -257,6 +266,15 @@ const GET_COMMAND_STATUS = gql`
   }
 `;
 
+//GraphQL query for names total count
+const GET_NAMES_COUNT = gql`
+  query GetNamesCount {
+    names(skip: 0, take: 1) {
+      totalCount
+    }
+  }
+`;
+
 // Create Apollo Client for Doma Protocol with API key authentication
 const httpLink = createHttpLink({
   uri: process.env.NEXT_PUBLIC_DOMA_SUBGRAPH_URL || 'https://api-testnet.doma.xyz/graphql',
@@ -264,12 +282,11 @@ const httpLink = createHttpLink({
 
 // Add authentication headers - Use the correct API-Key header
 const authLink = setContext((_, { headers }) => {
-  const apiKey = process.env.NEXT_PUBLIC_DOMA_API_KEY || 'v1.8f6347c32950c1bfaedc4b29676fcaa14a6586ed8586338b24fdfc6c69df8b02';
-  
+  const apiKey = process.env.NEXT_PUBLIC_DOMA_API_KEY || process.env.DOMA_API_KEY;
   return {
     headers: {
       ...headers,
-      'API-Key': apiKey,
+      ...(apiKey ? { 'API-Key': apiKey as string } : {}),
       'Content-Type': 'application/json',
     }
   };
@@ -374,13 +391,16 @@ export function useDomaSubgraph() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [namesTotalCount, setNamesTotalCount] = useState(0);
 
   useEffect(() => {
-    fetchTokenizedNames();
-    fetchListings();
+    fetchNameCount();
+    
+    // fetchTokenizedNames();
+    // fetchListings();
   }, []);
 
-  const fetchTokenizedNames = async (skip = 0, take = 100) => {
+  const fetchTokenizedNames = async (name?: string, skip = 0, take = 15, append = false) => {
     try {
       setLoading(true);
       setError(null);
@@ -389,29 +409,26 @@ export function useDomaSubgraph() {
       
       const { data } = await client.query({
         query: GET_TOKENIZED_NAMES,
-        variables: { skip: Number(skip), take: Number(take) },
+        variables: { skip: Number(skip), take: Number(take), name: name || null },
         fetchPolicy: 'network-only',
       });
 
-      if (data?.names?.items) {
-        setNames(data.names.items);
-        console.log('Successfully fetched tokenized names:', data.names.items.length);
-      }
+      const newItems = data?.names?.items || [];
+      setNames(prev => append ? [...prev, ...newItems] : newItems);
+
+      return {
+        items: newItems,
+        totalCount: data?.names?.totalCount ?? 0,
+        hasNextPage: data?.names?.hasNextPage ?? false,
+      };
     } catch (err) {
       console.error('Error fetching tokenized names:', err);
-      if (err.graphQLErrors) {
-        err.graphQLErrors.forEach((error: any) => {
-          console.error('GraphQL Error:', error.message, error.extensions);
-        });
-      }
-      // Don't set error for API issues, just log them
-      // setError(err instanceof Error ? err.message : 'Failed to fetch tokenized names');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchListings = async (skip = 0, take = 100) => {
+  const fetchListings = async (name?: string, skip = 0, take = 15, append = false) => {
     try {
       const { data } = await client.query({
         query: GET_LISTINGS,
@@ -419,13 +436,23 @@ export function useDomaSubgraph() {
         fetchPolicy: 'network-only',
       });
 
-      if (data?.listings?.items) {
-        setListings(data.listings.items);
-        console.log('Successfully fetched listings:', data.listings.items.length);
-      }
+      const items = data?.listings?.items || [];
+      const filtered = name
+        ? items.filter((l: any) => {
+            const n = l?.token?.name || l?.name || '';
+            return n.toLowerCase().includes(name.toLowerCase());
+          })
+        : items;
+
+      setListings(prev => append ? [...prev, ...filtered] : filtered);
+
+      return {
+        items: filtered,
+        totalCount: data?.listings?.totalCount ?? 0,
+        hasNextPage: data?.listings?.hasNextPage ?? false,
+      };
     } catch (err) {
       console.error('Error fetching listings:', err);
-      // Don't set error for API issues, just log them
     }
   };
 
@@ -602,6 +629,25 @@ export function useDomaSubgraph() {
     }
   };
 
+  const fetchNameCount = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data } = await client.query({
+        query: GET_NAMES_COUNT,
+        fetchPolicy: 'network-only',
+      });
+
+      setNamesTotalCount(data?.names?.totalCount ?? 0);
+    } catch (err) {
+      console.error('Error fetching names count:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch names count');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     names,
     listings,
@@ -615,6 +661,9 @@ export function useDomaSubgraph() {
     getNameActivities,
     getTokenActivities,
     getCommandStatus,
+    // new:
+    namesTotalCount,
+    fetchNameCount,
   };
 }
 
