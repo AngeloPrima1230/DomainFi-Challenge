@@ -406,7 +406,12 @@ export function useDomaSubgraph() {
       });
 
       const newItems = data?.names?.items || [];
+
       setNames(prev => append ? [...prev, ...newItems] : newItems);
+
+      if(!name || name === '' || name === null || name === undefined) {
+        setNamesTotalCount(data?.names?.totalCount ?? 0);
+      }
 
       return {
         items: newItems,

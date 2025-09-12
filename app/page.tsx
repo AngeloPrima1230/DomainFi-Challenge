@@ -11,6 +11,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useNetwork, useSwitchNetwork } from 'wagmi';
 import { sepolia } from 'wagmi/chains';
 import { formatUnits } from 'viem';
+import { useTokenPrices } from './hooks/useTokenPrices';
 
 // Advanced filter interface
 interface AdvancedFilters {
@@ -72,6 +73,9 @@ export default function Home() {
   const { address, isConnected } = useAccount();
   const { chain } = useNetwork();
   const { switchNetwork } = useSwitchNetwork();
+
+  // USD pricing
+  const { getUsdRate } = useTokenPrices();
   
   // Auto-switch to Sepolia when connected
   useEffect(() => {
@@ -83,6 +87,7 @@ export default function Home() {
 
   // Combine data from both sources
   const allListings = [...listings, ...marketplaceListings];
+  console.log(allListings);
   
   // Create searchable items from both tokenized names and listings
   const searchableItems = [
@@ -348,16 +353,16 @@ export default function Home() {
   const uniqueTlds = [...new Set(searchableItems.map(item => item.tld).filter(Boolean))];
 
   // Debug logging
-  console.log('Search term:', searchTerm);
-  console.log('Advanced filters:', {
-    ...advancedFilters,
-    networkFilter: advancedFilters.networkFilter ? 
-      `"${advancedFilters.networkFilter}" (${getNetworkId(advancedFilters.networkFilter)})` : 
-      'All Networks'
-  });
-  console.log('Total searchable items:', searchableItems.length);
-  console.log('Filtered items:', sortedItems.length);
-  console.log('Available networks:', uniqueNetworks);
+  // console.log('Search term:', searchTerm);
+  // console.log('Advanced filters:', {
+  //   ...advancedFilters,
+  //   networkFilter: advancedFilters.networkFilter ? 
+  //     `"${advancedFilters.networkFilter}" (${getNetworkId(advancedFilters.networkFilter)})` : 
+  //     'All Networks'
+  // });
+  // console.log('Total searchable items:', searchableItems.length);
+  // console.log('Filtered items:', sortedItems.length);
+  // console.log('Available networks:', uniqueNetworks);
 
   const handleViewDetails = (domain: any) => {
     setSelectedDomain(domain);
@@ -376,7 +381,9 @@ export default function Home() {
     setListingsSkip(0);
 
     const namesRes = await fetchTokenizedNames(term, 0, pageSize, false);
+    console.log(namesRes);
     setSearchTotalCount(namesRes?.totalCount ?? 0);         // backend total
+    
     setHasMoreNames(!!namesRes?.hasNextPage);
 
     const listingsRes = await fetchListings(term, 0, pageSize, false);
@@ -405,10 +412,30 @@ export default function Home() {
     });
   };
 
+  // Compute total volume in USD only
+  const totalVolumeUsd = allListings.reduce((sum, l: any) => {
+    const currency = typeof l.currency === 'object' ? l.currency?.symbol : l.currency;
+    const decimals = typeof l.currency === 'object' ? l.currency?.decimals : undefined;
+
+    let amountInNative = 0;
+    try {
+      if (decimals !== undefined && l.price) {
+        amountInNative = parseFloat(formatUnits(BigInt(l.price), decimals));
+      } else {
+        amountInNative = parseFloat(l.price || '0') || 0;
+      }
+    } catch {
+      amountInNative = 0;
+    }
+
+    const rate = getUsdRate(currency);
+    return sum + amountInNative * (rate || 0);
+  }, 0);
+
   const stats = {
     activeListings: allListings.filter(l => 'status' in l ? l.status === 'active' : true).length,
     tokenizedDomains: namesTotalCount,
-    totalVolume: allListings.reduce((sum, l) => sum + parseFloat(l.price || '0'), 0).toFixed(2),
+    totalVolume: `${totalVolumeUsd.toFixed(2)}`,
     listedDomains: allListings.length,
     searchResults: searchTotalCount
   };
