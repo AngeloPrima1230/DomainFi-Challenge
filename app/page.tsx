@@ -10,6 +10,7 @@ import AnalyticsDashboard from './components/AnalyticsDashboard';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useNetwork, useSwitchNetwork } from 'wagmi';
 import { sepolia } from 'wagmi/chains';
+import { formatUnits } from 'viem';
 
 // Advanced filter interface
 interface AdvancedFilters {
@@ -102,24 +103,65 @@ export default function Home() {
       tld: name.name.split('.').pop() || '',
       networks: name.tokens?.map(token => token.networkId) || []
     })),
+
     // Add marketplace listings
-    ...allListings.map(listing => ({
-      type: 'listing' as const,
-      id: listing.id,
-      name: 'token' in listing ? listing.token?.name : listing.name,
-      registrar: 'Doma Marketplace',
-      registrarId: 0,
-      expiresAt: listing.expiresAt,
-      tokenizedAt: null,
-      tokens: null,
-      price: listing.price,
-      status: 'status' in listing ? listing.status : 'active',
-      isTokenized: false,
-      listing: listing,
-      owner: 'token' in listing ? listing.token?.ownerAddress : (listing as any).offererAddress || 'Unknown',
-      tld: ('token' in listing ? listing.token?.name : listing.name)?.split('.').pop() || '',
-      networks: 'token' in listing ? [listing.token?.chain?.networkId].filter(Boolean) : []
-    }))
+    ...allListings.map(listing => {
+      // prefer symbol if currency is an object (GraphQL), else take raw string
+      const currencySymbol =
+        (listing as any)?.currency && typeof (listing as any).currency === 'object'
+          ? (listing as any).currency.symbol
+          : (listing as any).currency;
+
+      // decimals for normalization (if provided by GraphQL)
+      const decimals =
+        (listing as any)?.currency && typeof (listing as any).currency === 'object'
+          ? (listing as any).currency.decimals
+          : undefined;
+
+      // derive name/owner/networks for subgraph listings via tokenId join against names[]
+      let derivedName: string | undefined = undefined;
+      let derivedOwner: string | undefined = undefined;
+      let derivedNetwork: string | undefined = undefined;
+
+      if (!('token' in listing) && (listing as any).tokenId) {
+        const match = names.find(n => n.tokens?.some(t => t.tokenId === (listing as any).tokenId));
+        if (match) {
+          derivedName = match.name;
+          const tok = match.tokens.find(t => t.tokenId === (listing as any).tokenId);
+          derivedOwner = tok?.ownerAddress;
+          derivedNetwork = tok?.chain?.networkId;
+        }
+      }
+
+      // normalize on-chain price using decimals when available
+      const normalizedPrice = (() => {
+        try {
+          if (decimals !== undefined && listing.price) {
+            return formatUnits(BigInt(listing.price), decimals);
+          }
+        } catch { }
+        return listing.price;
+      })();
+
+      return {
+        type: 'listing' as const,
+        id: listing.id,
+        name: 'token' in listing ? listing.token?.name : derivedName,
+        registrar: 'Doma Marketplace',
+        registrarId: 0,
+        expiresAt: listing.expiresAt,
+        tokenizedAt: null,
+        tokens: null,
+        price: normalizedPrice,
+        currency: currencySymbol,
+        status: 'status' in listing ? listing.status : 'active',
+        isTokenized: false,
+        listing: listing,
+        owner: 'token' in listing ? listing.token?.ownerAddress : (derivedOwner || (listing as any).offererAddress || 'Unknown'),
+        tld: ('token' in listing ? listing.token?.name : derivedName)?.split('.').pop() || '',
+        networks: 'token' in listing ? [listing.token?.chain?.networkId].filter(Boolean) : (derivedNetwork ? [derivedNetwork] : [])
+      };
+    })
   ];
 
   // Helper functions for filtering
@@ -338,6 +380,7 @@ export default function Home() {
     setHasMoreNames(!!namesRes?.hasNextPage);
 
     const listingsRes = await fetchListings(term, 0, pageSize, false);
+    console.log(listingsRes);
     setHasMoreListings(!!listingsRes?.hasNextPage);
   };
 
@@ -823,7 +866,7 @@ export default function Home() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {sortedItems.map((item, index) => (
                       <AuctionCard
-                        key={item.id || index}
+                        key={`${item.id}-${index}`}
                         auction={item}
                         onViewDetails={() => handleViewDetails(item)}
                       />

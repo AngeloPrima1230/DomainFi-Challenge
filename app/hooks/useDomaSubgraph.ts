@@ -88,7 +88,10 @@ const GET_NAME_DETAILS = gql`
         listings {
           id
           price
-          currency
+          currency {
+            symbol
+            decimals
+          }
           expiresAt
           orderbook
         }
@@ -105,29 +108,23 @@ const GET_NAME_DETAILS = gql`
   }
 `;
 
-// GraphQL query for listings
 const GET_LISTINGS = gql`
-  query GetListings($skip: Float = 0, $take: Float = 100) {
+  query GetListings($skip: Int = 0, $take: Int = 100) {
     listings(skip: $skip, take: $take) {
       items {
         id
         externalId
         price
+        currency {
+          symbol
+          decimals
+        }
         offererAddress
         orderbook
         tokenId
         expiresAt
         createdAt
         updatedAt
-        token {
-          tokenId
-          name
-          ownerAddress
-          chain {
-            name
-            networkId
-          }
-        }
       }
       totalCount
       pageSize
@@ -141,7 +138,7 @@ const GET_LISTINGS = gql`
 
 // GraphQL query for name activities
 const GET_NAME_ACTIVITIES = gql`
-  query GetNameActivities($name: String!, $skip: Float, $take: Float) {
+  query GetNameActivities($name: String!, $skip: Int, $take: Int) {
     nameActivities(name: $name, skip: $skip, take: $take, sortOrder: DESC) {
       items {
         __typename
@@ -197,7 +194,7 @@ const GET_NAME_ACTIVITIES = gql`
 
 // GraphQL query for token activities
 const GET_TOKEN_ACTIVITIES = gql`
-  query GetTokenActivities($tokenId: String!, $skip: Float, $take: Float) {
+  query GetTokenActivities($tokenId: String!, $skip: Int, $take: Int) {
     tokenActivities(tokenId: $tokenId, skip: $skip, take: $take, sortOrder: DESC) {
       items {
         __typename
@@ -330,19 +327,14 @@ export interface Listing {
   price: string;
   offererAddress: string;
   orderbook: 'DOMA' | 'OPENSEA';
-  currency: string;
+  currency: {
+    symbol: string;
+    decimals: number;
+  };
+  tokenId: string;
   expiresAt: string;
   createdAt: string;
   updatedAt: string;
-  token: {
-    tokenId: string;
-    name: string;
-    ownerAddress: string;
-    chain: {
-      name: string;
-      networkId: string;
-    };
-  };
 }
 
 export interface PaginatedResponse<T> {

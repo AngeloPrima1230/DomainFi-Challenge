@@ -72,10 +72,10 @@ export default function AuctionCard({ auction, onViewDetails }: AuctionCardProps
   const tokenizedAt = auction.tokenizedAt;
 
   const formatPrice = (price: number) => {
-    if (currency === 'ETH') {
-      return `${price.toFixed(4)} ETH`;
-    }
-    return `$${price.toFixed(2)}`;
+    const sym = (currency || '').toUpperCase();
+    if (sym === 'ETH') return `${price.toFixed(4)} ETH`;
+    if (sym === 'USDC' || sym === 'USD') return `$${price.toFixed(2)}`;
+    return `${price.toFixed(4)} ${sym}`.trim();
   };
 
   const formatExpiry = (expiryDate: string) => {
