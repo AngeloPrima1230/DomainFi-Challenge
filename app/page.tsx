@@ -87,7 +87,6 @@ export default function Home() {
 
   // Combine data from both sources
   const allListings = [...listings, ...marketplaceListings];
-  console.log(allListings);
   
   // Create searchable items from both tokenized names and listings
   const searchableItems = [
@@ -375,6 +374,7 @@ export default function Home() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const handleSearch = async () => {
+    console.log('handleSearch');
     const term = inputValue.trim();
     setSearchTerm(term);
     setNamesSkip(0);
