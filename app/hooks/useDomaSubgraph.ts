@@ -386,7 +386,7 @@ export function useDomaSubgraph() {
   const [namesTotalCount, setNamesTotalCount] = useState(0);
 
   useEffect(() => {
-    fetchNameCount();
+    // fetchNameCount();
     
     // fetchTokenizedNames();
     // fetchListings();

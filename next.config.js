@@ -7,6 +7,7 @@ const nextConfig = {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
     // Expose DOMA API variables to the client (only those safe to expose)
     NEXT_PUBLIC_DOMA_SUBGRAPH_URL: process.env.NEXT_PUBLIC_DOMA_SUBGRAPH_URL,
+    DOMA_API_KEY: process.env.DOMA_API_KEY,
     NEXT_PUBLIC_DOMA_API_KEY: process.env.NEXT_PUBLIC_DOMA_API_KEY || process.env.DOMA_API_KEY,
   },
   webpack: (config, { isServer }) => {

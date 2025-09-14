@@ -12,6 +12,7 @@ import { useAccount, useNetwork, useSwitchNetwork } from 'wagmi';
 import { sepolia } from 'wagmi/chains';
 import { formatUnits } from 'viem';
 import { useTokenPrices } from './hooks/useTokenPrices';
+import { formatShort } from './utils/format';
 
 // Advanced filter interface
 interface AdvancedFilters {
@@ -49,13 +50,17 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [namesSkip, setNamesSkip] = useState(0);
   const [listingsSkip, setListingsSkip] = useState(0);
-  const pageSize = 15;
   const [inputValue, setInputValue] = useState('');
   const [searchTotalCount, setSearchTotalCount] = useState(0);
   const [filter, setFilter] = useState('all');
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [allListings, setAllListings] = useState<any[]>([]);
+
+  const hoursFetching = 1;
+  const timeFetching = 1000 * 60 * 60 * hoursFetching; // 1 hour
+  const pageSize = 15;
   
   // Advanced filters state
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
@@ -68,25 +73,57 @@ export default function Home() {
     sortBy: 'newest',
     sortOrder: 'desc'
   });
-  
-  // Network switching for Doma Protocol (Sepolia)
+
   const { address, isConnected } = useAccount();
   const { chain } = useNetwork();
   const { switchNetwork } = useSwitchNetwork();
 
   // USD pricing
   const { getUsdRate } = useTokenPrices();
-  
-  // Auto-switch to Sepolia when connected
+
+  // Remote market stats (owner-scoped or last 1 hour if no wallet)
+  const [marketStats, setMarketStats] = useState<{
+    active: number;
+    listed: number;
+    totalVolumeUsd: number;
+    tokenizedDomains: number;
+  } | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+
   useEffect(() => {
-    if (isConnected && chain && chain.id !== sepolia.id && switchNetwork) {
-      console.log('Switching to Sepolia for Doma Protocol...');
-      switchNetwork(sepolia.id);
-    }
-  }, [isConnected, chain, switchNetwork]);
+    let id: any;
+
+    const fetchStats = async () => {
+      setStatsLoading(true);
+      try {
+        const qs = isConnected && address
+          ? `owner=${address}`
+          : `since=${encodeURIComponent(new Date(Date.now() - timeFetching).toISOString())}`;
+        const res = await fetch(`/api/market-stats?${qs}`);
+        const json = await res.json();
+        setMarketStats(json);
+      } catch {
+        setMarketStats(null);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    fetchStats();
+
+    // if (!isConnected) {
+    //   id = setInterval(fetchStats, timeFetching); // 1 hour
+    // }
+
+    return () => { if (id) clearInterval(id); };
+  }, [isConnected, address]);
 
   // Combine data from both sources
-  const allListings = [...listings, ...marketplaceListings];
+  useEffect(() => {
+    setAllListings([...listings, ...marketplaceListings]);
+    console.log(listings, marketplaceListings)
+  }, [listings, marketplaceListings]);
+
   
   // Create searchable items from both tokenized names and listings
   const searchableItems = [
@@ -374,7 +411,6 @@ export default function Home() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const handleSearch = async () => {
-    console.log('handleSearch');
     const term = inputValue.trim();
     setSearchTerm(term);
     setNamesSkip(0);
@@ -432,13 +468,21 @@ export default function Home() {
     return sum + amountInNative * (rate || 0);
   }, 0);
 
-  const stats = {
+  const defaultStats = {
     activeListings: allListings.filter(l => 'status' in l ? l.status === 'active' : true).length,
     tokenizedDomains: namesTotalCount,
-    totalVolume: `${totalVolumeUsd.toFixed(2)}`,
+    totalVolume: formatShort(totalVolumeUsd),
     listedDomains: allListings.length,
     searchResults: searchTotalCount
   };
+
+  const stats = marketStats ? {
+    activeListings: marketStats.active,
+    tokenizedDomains: marketStats.tokenizedDomains,
+    totalVolume: formatShort(marketStats.totalVolumeUsd || 0),
+    listedDomains: marketStats.listed,
+    searchResults: searchTotalCount
+  } : defaultStats;
 
   // load more (e.g., in IntersectionObserver callback)
   const loadMore = async () => {
@@ -460,6 +504,10 @@ export default function Home() {
 
     setIsLoadingMore(false);
   };
+
+  const indicateTime = () => {
+    return !isConnected ? `(${hoursFetching}h)` : '';
+  }
 
   useEffect(() => {
     if (!loadMoreRef.current) return;
@@ -513,20 +561,36 @@ export default function Home() {
           {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-              <div className="text-3xl font-bold text-blue-400">{stats.activeListings}</div>
-              <div className="text-sm text-gray-400">Active Listings</div>
+              <div className="text-3xl font-bold text-blue-400">
+                {statsLoading
+                  ? <div className="mx-auto inline-block animate-spin rounded-full h-6 w-6 border-2 border-blue-400 border-t-transparent" />
+                  : stats.activeListings}
+              </div>
+              <div className="text-sm text-gray-400">Active Listings {indicateTime()}</div>
             </div>
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-              <div className="text-3xl font-bold text-purple-400">{stats.tokenizedDomains}</div>
-              <div className="text-sm text-gray-400">Tokenized Domains</div>
+              <div className="text-3xl font-bold text-purple-400">
+                {statsLoading
+                  ? <div className="mx-auto inline-block animate-spin rounded-full h-6 w-6 border-2 border-purple-400 border-t-transparent" />
+                  : stats.tokenizedDomains}
+              </div>
+              <div className="text-sm text-gray-400">Tokenized Domains {indicateTime()}</div>
             </div>
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-              <div className="text-3xl font-bold text-green-400">${stats.totalVolume}</div>
-              <div className="text-sm text-gray-400">Total Volume</div>
+              <div className="text-3xl font-bold text-green-400">
+                {statsLoading
+                  ? <div className="mx-auto inline-block animate-spin rounded-full h-6 w-6 border-2 border-green-400 border-t-transparent" />
+                  : `$${stats.totalVolume}`}
+              </div>
+              <div className="text-sm text-gray-400">Total Volume {indicateTime()}</div>
             </div>
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-              <div className="text-3xl font-bold text-orange-400">{stats.listedDomains}</div>
-              <div className="text-sm text-gray-400">Listed Domains</div>
+              <div className="text-3xl font-bold text-orange-400">
+                {statsLoading
+                  ? <div className="mx-auto inline-block animate-spin rounded-full h-6 w-6 border-2 border-orange-400 border-t-transparent" />
+                  : stats.listedDomains}
+              </div>
+              <div className="text-sm text-gray-400">Listed Domains {indicateTime()}</div>
             </div>
           </div>
 

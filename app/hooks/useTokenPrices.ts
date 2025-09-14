@@ -13,28 +13,25 @@ export function useTokenPrices() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(
-        'https://api.coingecko.com/api/v3/simple/price?ids=ethereum,usd-coin&vs_currencies=usd',
-        { cache: 'no-store' }
-      );
+      const res = await fetch('/api/prices?ids=ethereum,usd-coin&vs=usd', { cache: 'no-store' });
       if (!res.ok) throw new Error(`Price fetch failed: ${res.status}`);
       const data = await res.json();
-      const next: PriceMap = {
-        ETH: data?.ethereum?.usd ?? 0,
-        USDC: data?.['usd-coin']?.usd ?? 1,
-        USD: 1,
-      };
-      setPrices(next);
-    } catch (e: any) {
-      setError(e?.message || 'Failed to fetch prices');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+        const next: PriceMap = {
+          ETH: data?.ethereum?.usd ?? 0,
+          USDC: data?.['usd-coin']?.usd ?? 1,
+          USD: 1,
+        };
+        setPrices(next);
+      } catch (e: any) {
+        setError(e?.message || 'Failed to fetch prices');
+      } finally {
+        setLoading(false);
+      }
+    }, []);
 
   useEffect(() => {
     fetchPrices();
-    const id = setInterval(fetchPrices, 60_000);
+    const id = setInterval(fetchPrices, 3_600_000); // 1 hour
     return () => clearInterval(id);
   }, [fetchPrices]);
 
