@@ -10,6 +10,9 @@ import AnalyticsDashboard from './components/AnalyticsDashboard';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useNetwork, useSwitchNetwork } from 'wagmi';
 import { sepolia } from 'wagmi/chains';
+import { formatUnits } from 'viem';
+import { useTokenPrices } from './hooks/useTokenPrices';
+import { formatShort } from './utils/format';
 
 // Advanced filter interface
 interface AdvancedFilters {
@@ -47,13 +50,17 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [namesSkip, setNamesSkip] = useState(0);
   const [listingsSkip, setListingsSkip] = useState(0);
-  const pageSize = 15;
   const [inputValue, setInputValue] = useState('');
   const [searchTotalCount, setSearchTotalCount] = useState(0);
   const [filter, setFilter] = useState('all');
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [allListings, setAllListings] = useState<any[]>([]);
+
+  const hoursFetching = 1;
+  const timeFetching = 1000 * 60 * 60 * hoursFetching; // 1 hour
+  const pageSize = 15;
   
   // Advanced filters state
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
@@ -66,22 +73,57 @@ export default function Home() {
     sortBy: 'newest',
     sortOrder: 'desc'
   });
-  
-  // Network switching for Doma Protocol (Sepolia)
+
   const { address, isConnected } = useAccount();
   const { chain } = useNetwork();
   const { switchNetwork } = useSwitchNetwork();
-  
-  // Auto-switch to Sepolia when connected
+
+  // USD pricing
+  const { getUsdRate } = useTokenPrices();
+
+  // Remote market stats (owner-scoped or last 1 hour if no wallet)
+  const [marketStats, setMarketStats] = useState<{
+    active: number;
+    listed: number;
+    totalVolumeUsd: number;
+    tokenizedDomains: number;
+  } | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+
   useEffect(() => {
-    if (isConnected && chain && chain.id !== sepolia.id && switchNetwork) {
-      console.log('Switching to Sepolia for Doma Protocol...');
-      switchNetwork(sepolia.id);
-    }
-  }, [isConnected, chain, switchNetwork]);
+    let id: any;
+
+    const fetchStats = async () => {
+      setStatsLoading(true);
+      try {
+        const qs = isConnected && address
+          ? `owner=${address}`
+          : `since=${encodeURIComponent(new Date(Date.now() - timeFetching).toISOString())}`;
+        const res = await fetch(`/api/market-stats?${qs}`);
+        const json = await res.json();
+        setMarketStats(json);
+      } catch {
+        setMarketStats(null);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    fetchStats();
+
+    // if (!isConnected) {
+    //   id = setInterval(fetchStats, timeFetching); // 1 hour
+    // }
+
+    return () => { if (id) clearInterval(id); };
+  }, [isConnected, address]);
 
   // Combine data from both sources
-  const allListings = [...listings, ...marketplaceListings];
+  useEffect(() => {
+    setAllListings([...listings, ...marketplaceListings]);
+    console.log(listings, marketplaceListings)
+  }, [listings, marketplaceListings]);
+
   
   // Create searchable items from both tokenized names and listings
   const searchableItems = [
@@ -102,24 +144,65 @@ export default function Home() {
       tld: name.name.split('.').pop() || '',
       networks: name.tokens?.map(token => token.networkId) || []
     })),
+
     // Add marketplace listings
-    ...allListings.map(listing => ({
-      type: 'listing' as const,
-      id: listing.id,
-      name: 'token' in listing ? listing.token?.name : listing.name,
-      registrar: 'Doma Marketplace',
-      registrarId: 0,
-      expiresAt: listing.expiresAt,
-      tokenizedAt: null,
-      tokens: null,
-      price: listing.price,
-      status: 'status' in listing ? listing.status : 'active',
-      isTokenized: false,
-      listing: listing,
-      owner: 'token' in listing ? listing.token?.ownerAddress : (listing as any).offererAddress || 'Unknown',
-      tld: ('token' in listing ? listing.token?.name : listing.name)?.split('.').pop() || '',
-      networks: 'token' in listing ? [listing.token?.chain?.networkId].filter(Boolean) : []
-    }))
+    ...allListings.map(listing => {
+      // prefer symbol if currency is an object (GraphQL), else take raw string
+      const currencySymbol =
+        (listing as any)?.currency && typeof (listing as any).currency === 'object'
+          ? (listing as any).currency.symbol
+          : (listing as any).currency;
+
+      // decimals for normalization (if provided by GraphQL)
+      const decimals =
+        (listing as any)?.currency && typeof (listing as any).currency === 'object'
+          ? (listing as any).currency.decimals
+          : undefined;
+
+      // derive name/owner/networks for subgraph listings via tokenId join against names[]
+      let derivedName: string | undefined = undefined;
+      let derivedOwner: string | undefined = undefined;
+      let derivedNetwork: string | undefined = undefined;
+
+      if (!('token' in listing) && (listing as any).tokenId) {
+        const match = names.find(n => n.tokens?.some(t => t.tokenId === (listing as any).tokenId));
+        if (match) {
+          derivedName = match.name;
+          const tok = match.tokens.find(t => t.tokenId === (listing as any).tokenId);
+          derivedOwner = tok?.ownerAddress;
+          derivedNetwork = tok?.chain?.networkId;
+        }
+      }
+
+      // normalize on-chain price using decimals when available
+      const normalizedPrice = (() => {
+        try {
+          if (decimals !== undefined && listing.price) {
+            return formatUnits(BigInt(listing.price), decimals);
+          }
+        } catch { }
+        return listing.price;
+      })();
+
+      return {
+        type: 'listing' as const,
+        id: listing.id,
+        name: 'token' in listing ? listing.token?.name : derivedName,
+        registrar: 'Doma Marketplace',
+        registrarId: 0,
+        expiresAt: listing.expiresAt,
+        tokenizedAt: null,
+        tokens: null,
+        price: normalizedPrice,
+        currency: currencySymbol,
+        status: 'status' in listing ? listing.status : 'active',
+        isTokenized: false,
+        listing: listing,
+        owner: 'token' in listing ? listing.token?.ownerAddress : (derivedOwner || (listing as any).offererAddress || 'Unknown'),
+        tld: ('token' in listing ? listing.token?.name : derivedName)?.split('.').pop() || '',
+        networks: 'token' in listing ? [listing.token?.chain?.networkId].filter(Boolean) : (derivedNetwork ? [derivedNetwork] : [])
+      };
+    })
   ];
 
   // Helper functions for filtering
@@ -306,16 +389,16 @@ export default function Home() {
   const uniqueTlds = [...new Set(searchableItems.map(item => item.tld).filter(Boolean))];
 
   // Debug logging
-  console.log('Search term:', searchTerm);
-  console.log('Advanced filters:', {
-    ...advancedFilters,
-    networkFilter: advancedFilters.networkFilter ? 
-      `"${advancedFilters.networkFilter}" (${getNetworkId(advancedFilters.networkFilter)})` : 
-      'All Networks'
-  });
-  console.log('Total searchable items:', searchableItems.length);
-  console.log('Filtered items:', sortedItems.length);
-  console.log('Available networks:', uniqueNetworks);
+  // console.log('Search term:', searchTerm);
+  // console.log('Advanced filters:', {
+  //   ...advancedFilters,
+  //   networkFilter: advancedFilters.networkFilter ? 
+  //     `"${advancedFilters.networkFilter}" (${getNetworkId(advancedFilters.networkFilter)})` : 
+  //     'All Networks'
+  // });
+  // console.log('Total searchable items:', searchableItems.length);
+  // console.log('Filtered items:', sortedItems.length);
+  // console.log('Available networks:', uniqueNetworks);
 
   const handleViewDetails = (domain: any) => {
     setSelectedDomain(domain);
@@ -334,10 +417,13 @@ export default function Home() {
     setListingsSkip(0);
 
     const namesRes = await fetchTokenizedNames(term, 0, pageSize, false);
+    console.log(namesRes);
     setSearchTotalCount(namesRes?.totalCount ?? 0);         // backend total
+    
     setHasMoreNames(!!namesRes?.hasNextPage);
 
     const listingsRes = await fetchListings(term, 0, pageSize, false);
+    console.log(listingsRes);
     setHasMoreListings(!!listingsRes?.hasNextPage);
   };
 
@@ -362,13 +448,41 @@ export default function Home() {
     });
   };
 
-  const stats = {
+  // Compute total volume in USD only
+  const totalVolumeUsd = allListings.reduce((sum, l: any) => {
+    const currency = typeof l.currency === 'object' ? l.currency?.symbol : l.currency;
+    const decimals = typeof l.currency === 'object' ? l.currency?.decimals : undefined;
+
+    let amountInNative = 0;
+    try {
+      if (decimals !== undefined && l.price) {
+        amountInNative = parseFloat(formatUnits(BigInt(l.price), decimals));
+      } else {
+        amountInNative = parseFloat(l.price || '0') || 0;
+      }
+    } catch {
+      amountInNative = 0;
+    }
+
+    const rate = getUsdRate(currency);
+    return sum + amountInNative * (rate || 0);
+  }, 0);
+
+  const defaultStats = {
     activeListings: allListings.filter(l => 'status' in l ? l.status === 'active' : true).length,
     tokenizedDomains: namesTotalCount,
-    totalVolume: allListings.reduce((sum, l) => sum + parseFloat(l.price || '0'), 0).toFixed(2),
+    totalVolume: formatShort(totalVolumeUsd),
     listedDomains: allListings.length,
     searchResults: searchTotalCount
   };
+
+  const stats = marketStats ? {
+    activeListings: marketStats.active,
+    tokenizedDomains: marketStats.tokenizedDomains,
+    totalVolume: formatShort(marketStats.totalVolumeUsd || 0),
+    listedDomains: marketStats.listed,
+    searchResults: searchTotalCount
+  } : defaultStats;
 
   // load more (e.g., in IntersectionObserver callback)
   const loadMore = async () => {
@@ -390,6 +504,10 @@ export default function Home() {
 
     setIsLoadingMore(false);
   };
+
+  const indicateTime = () => {
+    return !isConnected ? `(${hoursFetching}h)` : '';
+  }
 
   useEffect(() => {
     if (!loadMoreRef.current) return;
@@ -443,20 +561,36 @@ export default function Home() {
           {/* Stats Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-              <div className="text-3xl font-bold text-blue-400">{stats.activeListings}</div>
-              <div className="text-sm text-gray-400">Active Listings</div>
+              <div className="text-3xl font-bold text-blue-400">
+                {statsLoading
+                  ? <div className="mx-auto inline-block animate-spin rounded-full h-6 w-6 border-2 border-blue-400 border-t-transparent" />
+                  : stats.activeListings}
+              </div>
+              <div className="text-sm text-gray-400">Active Listings {indicateTime()}</div>
             </div>
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-              <div className="text-3xl font-bold text-purple-400">{stats.tokenizedDomains}</div>
-              <div className="text-sm text-gray-400">Tokenized Domains</div>
+              <div className="text-3xl font-bold text-purple-400">
+                {statsLoading
+                  ? <div className="mx-auto inline-block animate-spin rounded-full h-6 w-6 border-2 border-purple-400 border-t-transparent" />
+                  : stats.tokenizedDomains}
+              </div>
+              <div className="text-sm text-gray-400">Tokenized Domains {indicateTime()}</div>
             </div>
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-              <div className="text-3xl font-bold text-green-400">${stats.totalVolume}</div>
-              <div className="text-sm text-gray-400">Total Volume</div>
+              <div className="text-3xl font-bold text-green-400">
+                {statsLoading
+                  ? <div className="mx-auto inline-block animate-spin rounded-full h-6 w-6 border-2 border-green-400 border-t-transparent" />
+                  : `$${stats.totalVolume}`}
+              </div>
+              <div className="text-sm text-gray-400">Total Volume {indicateTime()}</div>
             </div>
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-              <div className="text-3xl font-bold text-orange-400">{stats.listedDomains}</div>
-              <div className="text-sm text-gray-400">Listed Domains</div>
+              <div className="text-3xl font-bold text-orange-400">
+                {statsLoading
+                  ? <div className="mx-auto inline-block animate-spin rounded-full h-6 w-6 border-2 border-orange-400 border-t-transparent" />
+                  : stats.listedDomains}
+              </div>
+              <div className="text-sm text-gray-400">Listed Domains {indicateTime()}</div>
             </div>
           </div>
 
@@ -823,7 +957,7 @@ export default function Home() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {sortedItems.map((item, index) => (
                       <AuctionCard
-                        key={item.id || index}
+                        key={`${item.id}-${index}`}
                         auction={item}
                         onViewDetails={() => handleViewDetails(item)}
                       />

@@ -59,7 +59,7 @@ export function useDomaMarketplace() {
               },
             },
           ],
-                     apiClientOptions: {
+          apiClientOptions: {
              baseUrl: 'https://api-testnet.doma.xyz',
              defaultHeaders: {
                'API-Key': API_KEY,
@@ -68,6 +68,7 @@ export function useDomaMarketplace() {
         });
         
         setSdk(domaSDK);
+        console.log(domaSDK);
         console.log('Doma SDK initialized successfully');
       } catch (err) {
         console.error('Error initializing Doma SDK:', err);
@@ -224,14 +225,9 @@ export function useDomaMarketplace() {
   };
 
   useEffect(() => {
-    if (sdk) {
-      fetchListings();
-      fetchOffers();
-    } else {
-      // Load fallback data immediately if SDK is not available
-      fetchListings();
-      fetchOffers();
-    }
+    if (!sdk) return;
+    fetchListings();
+    fetchOffers();
   }, [sdk]);
 
   return {

@@ -4,15 +4,42 @@ import { RainbowKitProvider, connectorsForWallets } from '@rainbow-me/rainbowkit
 import { configureChains, createConfig, WagmiConfig } from 'wagmi';
 import { polygonMumbai, sepolia } from 'wagmi/chains';
 import { publicProvider } from 'wagmi/providers/public';
+import { jsonRpcProvider } from 'wagmi/providers/jsonRpc';
+import { alchemyProvider } from 'wagmi/providers/alchemy';
+import { infuraProvider } from 'wagmi/providers/infura';
 import { metaMaskWallet, coinbaseWallet } from '@rainbow-me/rainbowkit/wallets';
 import '@rainbow-me/rainbowkit/styles.css';
 
 const { chains, publicClient } = configureChains(
   [sepolia, polygonMumbai],
-  [publicProvider()]
+  [
+    // Priority 1: Alchemy (if key provided)
+    alchemyProvider({
+      apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || '',
+    }),
+    // Priority 2: Infura (if key provided)
+    infuraProvider({
+      apiKey: process.env.NEXT_PUBLIC_INFURA_API_KEY || '',
+    }),
+    // Priority 3: Custom RPC fallback(s)
+    jsonRpcProvider({
+      stallTimeout: 1500,
+      rpc: (chain) => {
+        if (chain.id === sepolia.id) {
+          return { http: process.env.NEXT_PUBLIC_SEPOLIA_RPC || 'https://rpc.sepolia.org' };
+        }
+        if (chain.id === polygonMumbai.id) {
+          return { http: process.env.NEXT_PUBLIC_MUMBAI_RPC || (chain.rpcUrls.default.http[0] || '') };
+        }
+        return null;
+      },
+    }),
+    // Priority 4: Public provider as a final fallback
+    publicProvider(),
+  ],
+  { stallTimeout: 1500 }
 );
 
-// Use specific wallets instead of getDefaultWallets to avoid WalletConnect issues
 const connectors = connectorsForWallets([
   {
     groupName: 'Recommended',
@@ -24,10 +51,9 @@ const connectors = connectorsForWallets([
 ]);
 
 const wagmiConfig = createConfig({
-  autoConnect: false, // Disable auto-connect to avoid WebSocket issues
+  autoConnect: false,
   connectors,
   publicClient,
-  // Remove webSocketPublicClient to avoid connection errors
 });
 
 export function Providers({ children }: { children: React.ReactNode }) {
