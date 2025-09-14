@@ -10,8 +10,6 @@ import { infuraProvider } from 'wagmi/providers/infura';
 import { metaMaskWallet, coinbaseWallet } from '@rainbow-me/rainbowkit/wallets';
 import '@rainbow-me/rainbowkit/styles.css';
 
-console.log(jsonRpcProvider, alchemyProvider, infuraProvider)
-
 const { chains, publicClient } = configureChains(
   [sepolia, polygonMumbai],
   [

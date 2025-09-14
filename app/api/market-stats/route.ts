@@ -3,9 +3,31 @@ import { NextResponse } from 'next/server';
 const GQL = process.env.NEXT_PUBLIC_DOMA_SUBGRAPH_URL || 'https://api-testnet.doma.xyz/graphql';
 const API_KEY = process.env.NEXT_PUBLIC_DOMA_API_KEY || process.env.DOMA_API_KEY;
 
-const GET_LISTINGS_PAGE = `
-  query GetListings($skip: Int = 0, $take: Int = 200) {
-    listings(skip: $skip, take: $take) {
+const GET_LISTINGS_BY_OWNER = `
+  query GetListingsByOwner($ownedBy: [AddressCAIP10!]!, $skip: Int = 0, $take: Int = 100) {
+    names(ownedBy: $ownedBy, skip: $skip, take: $take, sortOrder: DESC) {
+      items {
+        tokens {
+          ownerAddress
+          chain { networkId }
+          listings {
+            price
+            currency { symbol decimals }
+            orderbook
+            offererAddress
+            createdAt
+            expiresAt
+          }
+        }
+      }
+      hasNextPage
+    }
+  }
+`;
+
+const GET_LISTINGS_SINCE = `
+  query GetListingsSince($skip: Int = 0, $take: Int = 100, $createdSince: DateTime) {
+    listings(skip: $skip, take: $take, createdSince: $createdSince) {
       items {
         price
         currency { symbol decimals }
@@ -27,14 +49,12 @@ const GET_NAMES_COUNT_BY_OWNER = `
   }
 `;
 
-const GET_NAMES_COUNT = `
-  query { names(skip: 0, take: 1) { totalCount } }
-`;
-
 const GET_NAMES_PAGE = `
   query GetNamesPage($skip: Int = 0, $take: Int = 100) {
     names(skip: $skip, take: $take, sortOrder: DESC) {
-      items { name tokenizedAt }
+      items { 
+        tokenizedAt 
+      }
       hasNextPage
     }
   }
@@ -73,8 +93,6 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Invalid owner address' }, { status: 400 });
     }
     const ownerEvm = ownerRaw.toLowerCase();
-    const limitParam = parseInt(searchParams.get('limit') || '0', 10);
-    const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 1000) : 0;
 
     // when no owner, default to last 1 hour (can be overridden via ?since=...)
     const sinceParam = (searchParams.get('since') || '').trim();
@@ -101,39 +119,78 @@ export async function GET(req: Request) {
       USD: 1,
     };
 
-    // Coordinated paging over listings and (optional) recent names in one loop
-    let listed = 0, active = 0, totalUsd = 0;
-    let tokenizedDomains = 0;
+    let listed = 0, active = 0, totalUsd = 0, tokenizedDomains = 0;
 
-    let lSkip = 0, lTake = 100, lHasNext = true;
-    let nSkip = 0, nTake = 100, nHasNext = !ownerEvm && !!sinceMs;
+    if (ownerEvm) {
+      // Owner path: fetch owner's tokens and their listings
+      const ownedBy = [`eip155:97476:${ownerEvm}`];
+      let nSkip = 0, nTake = 100, nHasNext = true;
+      let ctLoop = 0;
+      while (nHasNext) {
+        console.log(++ctLoop)
+        const data = await gql<{
+          names: {
+            items: Array<{
+              tokens: Array<{
+                ownerAddress: string;
+                chain?: { networkId?: string };
+                listings?: Array<{
+                  price: string;
+                  currency?: { symbol?: string; decimals?: number };
+                  orderbook?: string;
+                  offererAddress?: string;
+                  createdAt?: string;
+                  expiresAt?: string;
+                }>;
+              }>;
+            }>;
+            hasNextPage: boolean;
+          };
+        }>(GET_LISTINGS_BY_OWNER, { ownedBy, skip: nSkip, take: nTake });
 
-    while (lHasNext || nHasNext) {
-      const [lData, nData] = await Promise.all([
-        lHasNext
-          ? gql<{ listings: { items: any[]; hasNextPage: boolean } }>(GET_LISTINGS_PAGE, { skip: lSkip, take: lTake })
-          : Promise.resolve(null as any),
-        nHasNext
-          ? gql<{ names: { items: Array<{ tokenizedAt: string }>; hasNextPage: boolean } }>(GET_NAMES_PAGE, { skip: nSkip, take: nTake })
-          : Promise.resolve(null as any),
-      ]);
+        const nameItems = data?.names?.items || [];
+        for (const name of nameItems) {
+          for (const tok of (name.tokens || [])) {
+            const ls = tok.listings || [];
+            for (const l of ls) {
+              if (l.orderbook !== 'DOMA') continue;
 
-      // Listings page
-      if (lData) {
+              listed++;
+              const isActive = l.expiresAt ? (new Date(l.expiresAt).getTime() > Date.now()) : false;
+              if (isActive) active++;
+
+              const sym = l.currency?.symbol?.toUpperCase?.() || 'ETH';
+              const dec = typeof l.currency?.decimals === 'number' ? l.currency.decimals : 18;
+              let native = 0;
+              try { native = Number(BigInt(l.price)) / 10 ** dec; } catch {}
+              totalUsd += native * (usdRate[sym] || 0);
+            }
+          }
+        }
+
+        nHasNext = data?.names?.hasNextPage ?? false;
+        nSkip += nTake;
+      }
+
+      // Owner tokenized count
+      const byOwner = await gql<{ names: { totalCount: number } }>(GET_NAMES_COUNT_BY_OWNER, { ownedBy });
+      tokenizedDomains = byOwner?.names?.totalCount ?? 0;
+
+    } else {
+      // No owner path: fetch listings since last 1h, names with client-side filtering
+      const createdSince = sinceMs ? new Date(sinceMs).toISOString() : undefined;
+
+      // Fetch listings since timestamp
+      let lSkip = 0, lTake = 100, lHasNext = true;
+      while (lHasNext) {
+        const lData = await gql<{ listings: { items: any[]; hasNextPage: boolean } }>(
+          GET_LISTINGS_SINCE, 
+          { skip: lSkip, take: lTake, createdSince }
+        );
         const items = lData.listings.items || [];
-        let pageHasRecent = false;
 
         for (const l of items) {
           if (l.orderbook !== 'DOMA') continue;
-
-          if (ownerEvm) {
-            const lEvm = evmFromCAIP10(l.offererAddress);
-            if (lEvm !== ownerEvm) continue;
-          } else if (sinceMs) {
-            const createdAtMs = new Date(l.createdAt).getTime();
-            if (createdAtMs < sinceMs) continue;
-            pageHasRecent = true;
-          }
 
           listed++;
           const isActive = new Date(l.expiresAt).getTime() > Date.now();
@@ -144,31 +201,28 @@ export async function GET(req: Request) {
           let native = 0;
           try { native = Number(BigInt(l.price)) / 10 ** dec; } catch {}
           totalUsd += native * (usdRate[sym] || 0);
-
-          if (!ownerEvm && limit > 0 && listed >= limit) break;
         }
 
-        if (!ownerEvm && limit > 0 && listed >= limit) {
-          lHasNext = false;
-        } else {
-          lHasNext = lData.listings.hasNextPage;
-          lSkip += lTake;
-          if (!ownerEvm && sinceMs && !pageHasRecent) lHasNext = false; // early stop on time window
-        }
+        lHasNext = lData.listings.hasNextPage;
+        lSkip += lTake;
       }
 
-      // Names page (only for last-1h path when no owner)
-      if (nData) {
+      // Fetch names and filter by tokenizedAt client-side (since tokenizedSince doesn't exist)
+      let nSkip = 0, nTake = 100, nHasNext = true;
+      while (nHasNext) {
+        const nData = await gql<{ names: { items: Array<{ tokenizedAt: string }>; hasNextPage: boolean } }>(
+          GET_NAMES_PAGE,
+          { skip: nSkip, take: nTake }
+        );
         const nItems = nData?.names?.items || [];
-        let pageHasRecent = false;
-
-        for (const it of nItems) {
-          const t = it?.tokenizedAt ? new Date(it.tokenizedAt).getTime() : 0;
-          if (t >= sinceMs) {
+        
+        // Filter by tokenizedAt client-side
+        for (const item of nItems) {
+          const tokenizedAt = item?.tokenizedAt ? new Date(item.tokenizedAt).getTime() : 0;
+          if (tokenizedAt >= sinceMs) {
             tokenizedDomains++;
-            pageHasRecent = true;
           } else {
-            // sorted DESC; older reached
+            // Since we're sorted DESC, once we hit older items, stop
             nHasNext = false;
             break;
           }
@@ -177,19 +231,9 @@ export async function GET(req: Request) {
         if (nHasNext) {
           nHasNext = nData?.names?.hasNextPage ?? false;
           nSkip += nTake;
-          if (!pageHasRecent) nHasNext = false;
         }
       }
-
-      if (!lHasNext && !nHasNext) break;
     }
-
-    // Owner tokenized count: single query
-    // if (ownerEvm) {
-    //   const ownedBy = [`eip155:97476:${ownerEvm}`];
-    //   const byOwner = await gql<{ names: { totalCount: number } }>(GET_NAMES_COUNT_BY_OWNER, { ownedBy });
-    //   tokenizedDomains = byOwner?.names?.totalCount ?? 0;
-    // }
 
     const maxAge = 60; // rolling 1h or owner-scoped → short cache
 
