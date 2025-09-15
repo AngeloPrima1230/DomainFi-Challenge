@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
-const GQL = process.env.NEXT_PUBLIC_DOMA_SUBGRAPH_URL || 'https://api-testnet.doma.xyz/graphql';
-const API_KEY = process.env.NEXT_PUBLIC_DOMA_API_KEY || process.env.DOMA_API_KEY;
+const GQL = process.env.DOMA_SUBGRAPH_URL || 'https://api-testnet.doma.xyz/graphql';
+const API_KEY = process.env.DOMA_API_KEY || process.env.DOMA_API_KEY;
 
 const GET_LISTINGS_BY_OWNER = `
   query GetListingsByOwner($ownedBy: [AddressCAIP10!]!, $skip: Int = 0, $take: Int = 100) {

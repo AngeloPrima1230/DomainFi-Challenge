@@ -12,7 +12,7 @@ export async function GET(req: Request) {
 
 		const key =
 			process.env.COINGECKO_API_KEY ||
-			process.env.NEXT_PUBLIC_COINGECKO_API_KEY ||
+			process.env.COINGECKO_API_KEY ||
 			process.env.CG_API_KEY;
 
 		const headers: Record<string, string> = {};
