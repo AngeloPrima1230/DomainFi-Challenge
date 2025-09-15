@@ -3,10 +3,7 @@
 import { RainbowKitProvider, connectorsForWallets } from '@rainbow-me/rainbowkit';
 import { configureChains, createConfig, WagmiConfig } from 'wagmi';
 import { polygonMumbai, sepolia } from 'wagmi/chains';
-import { publicProvider } from 'wagmi/providers/public';
-import { jsonRpcProvider } from 'wagmi/providers/jsonRpc';
-import { alchemyProvider } from 'wagmi/providers/alchemy';
-import { infuraProvider } from 'wagmi/providers/infura';
+import { publicProvider, jsonRpcProvider, alchemyProvider, infuraProvider } from 'wagmi';
 import { metaMaskWallet, coinbaseWallet } from '@rainbow-me/rainbowkit/wallets';
 import '@rainbow-me/rainbowkit/styles.css';
 
@@ -65,4 +62,3 @@ export function Providers({ children }: { children: React.ReactNode }) {
     </WagmiConfig>
   );
 }
-
