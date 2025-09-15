@@ -6,15 +6,15 @@ const nextConfig = {
   env: {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
     // Expose DOMA API variables to the client (only those safe to expose)
-    NEXT_PUBLIC_DOMA_SUBGRAPH_URL: process.env.NEXT_PUBLIC_DOMA_SUBGRAPH_URL,
+    DOMA_SUBGRAPH_URL: process.env.DOMA_SUBGRAPH_URL,
     DOMA_API_KEY: process.env.DOMA_API_KEY,
-    NEXT_PUBLIC_DOMA_API_KEY: process.env.NEXT_PUBLIC_DOMA_API_KEY || process.env.DOMA_API_KEY,
+    DOMA_API_KEY: process.env.DOMA_API_KEY || process.env.DOMA_API_KEY,
 
     // Wallet/RPC config
-    NEXT_PUBLIC_ALCHEMY_API_KEY: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY,
-    NEXT_PUBLIC_INFURA_API_KEY: process.env.NEXT_PUBLIC_INFURA_API_KEY,
-    NEXT_PUBLIC_SEPOLIA_RPC: process.env.NEXT_PUBLIC_SEPOLIA_RPC,
-    NEXT_PUBLIC_MUMBAI_RPC: process.env.NEXT_PUBLIC_MUMBAI_RPC,
+    ALCHEMY_API_KEY: process.env.ALCHEMY_API_KEY,
+    INFURA_API_KEY: process.env.INFURA_API_KEY,
+    SEPOLIA_RPC: process.env.SEPOLIA_RPC,
+    MUMBAI_RPC: process.env.MUMBAI_RPC,
   },
   webpack: (config, { isServer }) => {
     config.resolve.fallback = {

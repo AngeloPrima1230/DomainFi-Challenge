@@ -274,12 +274,12 @@ const GET_NAMES_COUNT = gql`
 
 // Create Apollo Client for Doma Protocol with API key authentication
 const httpLink = createHttpLink({
-  uri: process.env.NEXT_PUBLIC_DOMA_SUBGRAPH_URL || 'https://api-testnet.doma.xyz/graphql',
+  uri: process.env.DOMA_SUBGRAPH_URL || 'https://api-testnet.doma.xyz/graphql',
 });
 
 // Add authentication headers - Use the correct API-Key header
 const authLink = setContext((_, { headers }) => {
-  const apiKey = process.env.NEXT_PUBLIC_DOMA_API_KEY || process.env.DOMA_API_KEY;
+  const apiKey = process.env.DOMA_API_KEY || process.env.DOMA_API_KEY;
   return {
     headers: {
       ...headers,
@@ -397,7 +397,7 @@ export function useDomaSubgraph() {
       setLoading(true);
       setError(null);
       
-      console.log('Fetching tokenized names with API key:', process.env.NEXT_PUBLIC_DOMA_API_KEY ? 'Present' : 'Missing');
+      console.log('Fetching tokenized names with API key:', process.env.DOMA_API_KEY ? 'Present' : 'Missing');
       
       const { data } = await client.query({
         query: GET_TOKENIZED_NAMES,
