@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { formatEther } from 'viem';
+import { formatShort } from '../utils/format';
 
 interface Auction {
   id: string;
@@ -72,10 +73,10 @@ export default function AuctionCard({ auction, onViewDetails }: AuctionCardProps
   const tokenizedAt = auction.tokenizedAt;
 
   const formatPrice = (price: number) => {
-    if (currency === 'ETH') {
-      return `${price.toFixed(4)} ETH`;
-    }
-    return `$${price.toFixed(2)}`;
+    const sym = (currency || '').toUpperCase();
+    if (sym === 'USDC' || sym === 'USD') return `$${formatShort(price)}`;
+    if (sym === 'ETH') return `${formatShort(price)} ETH`;
+    return `${formatShort(price)} ${sym}`.trim();
   };
 
   const formatExpiry = (expiryDate: string) => {

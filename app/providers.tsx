@@ -9,10 +9,13 @@ import '@rainbow-me/rainbowkit/styles.css';
 
 const { chains, publicClient } = configureChains(
   [sepolia, polygonMumbai],
-  [publicProvider()]
+  [
+    // Use public provider as the main provider
+    publicProvider(),
+  ],
+  { stallTimeout: 1500 }
 );
 
-// Use specific wallets instead of getDefaultWallets to avoid WalletConnect issues
 const connectors = connectorsForWallets([
   {
     groupName: 'Recommended',
@@ -24,10 +27,9 @@ const connectors = connectorsForWallets([
 ]);
 
 const wagmiConfig = createConfig({
-  autoConnect: false, // Disable auto-connect to avoid WebSocket issues
+  autoConnect: false,
   connectors,
   publicClient,
-  // Remove webSocketPublicClient to avoid connection errors
 });
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -39,4 +41,3 @@ export function Providers({ children }: { children: React.ReactNode }) {
     </WagmiConfig>
   );
 }
-
