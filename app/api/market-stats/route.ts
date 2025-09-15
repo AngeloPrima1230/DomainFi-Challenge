@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 const GQL = process.env.DOMA_SUBGRAPH_URL || 'https://api-testnet.doma.xyz/graphql';
 const API_KEY = process.env.DOMA_API_KEY || process.env.DOMA_API_KEY;
 
