@@ -1,4 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 
 const GQL = process.env.DOMA_SUBGRAPH_URL || 'https://api-testnet.doma.xyz/graphql';
 const API_KEY = process.env.DOMA_API_KEY || process.env.DOMA_API_KEY;
@@ -85,9 +87,9 @@ async function gql<T>(query: string, variables?: any): Promise<T> {
   return (j as any).data;
 }
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
+    const { searchParams } = req.nextUrl;
     const ownerRaw = (searchParams.get('owner') || '').trim();
     if (ownerRaw && !/^0x[a-fA-F0-9]{40}$/.test(ownerRaw)) {
       return NextResponse.json({ error: 'Invalid owner address' }, { status: 400 });
