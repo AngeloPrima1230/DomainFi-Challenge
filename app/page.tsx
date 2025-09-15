@@ -7,6 +7,9 @@ import AuctionCard from './components/AuctionCard';
 import CreateAuctionModal from './components/CreateAuctionModal';
 import DomainDetailsModal from './components/DomainDetailsModal';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
+import MarketplaceTab from './components/MarketplaceTab';
+import CreateListingModal from './components/CreateListingModal';
+import PlaceOfferModal from './components/PlaceOfferModal';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useNetwork, useSwitchNetwork } from 'wagmi';
 import { sepolia } from 'wagmi/chains';
@@ -43,7 +46,11 @@ export default function Home() {
     fetchTokenizedNames,
     fetchListings
   } = useDomaSubgraph();
-  const { listings: marketplaceListings } = useDomaMarketplace();
+  const { 
+    listings: marketplaceListings, 
+    createListing, 
+    placeOffer 
+  } = useDomaMarketplace();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedDomain, setSelectedDomain] = useState<any>(null);
@@ -56,6 +63,7 @@ export default function Home() {
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showMarketplace, setShowMarketplace] = useState(false);
   const [allListings, setAllListings] = useState<any[]>([]);
 
   const hoursFetching = 1;
@@ -910,6 +918,16 @@ export default function Home() {
             >
               {showAnalytics ? 'Hide Analytics' : 'View Analytics'}
             </button>
+            <button
+              onClick={() => setShowMarketplace(!showMarketplace)}
+              className={`px-8 py-3 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg ${
+                showMarketplace
+                  ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white'
+                  : 'bg-white/10 backdrop-blur-sm border border-white/20 text-gray-300 hover:bg-white/20 hover:border-white/30'
+              }`}
+            >
+              {showMarketplace ? 'Hide Marketplace' : 'View Marketplace'}
+            </button>
           </div>
         </div>
       </section>
@@ -922,6 +940,17 @@ export default function Home() {
               searchableItems={searchableItems}
               allListings={allListings}
               names={names}
+            />
+          </div>
+        </section>
+      )}
+
+      {/* Marketplace Tab */}
+      {showMarketplace && (
+        <section className="px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-7xl mx-auto">
+            <MarketplaceTab 
+              className="bg-white/5 backdrop-blur-sm rounded-lg p-8 border border-white/10"
             />
           </div>
         </section>
@@ -985,6 +1014,18 @@ export default function Home() {
         getNameActivities={getNameActivities}
         getTokenActivities={getTokenActivities}
         getCommandStatus={getCommandStatus}
+      />
+
+      {/* Marketplace Modals */}
+      <CreateListingModal 
+        isOpen={false} 
+        onClose={() => {}} 
+        onSubmit={createListing}
+      />
+      <PlaceOfferModal 
+        isOpen={false} 
+        onClose={() => {}} 
+        onSubmit={placeOffer}
       />
     </div>
   );
