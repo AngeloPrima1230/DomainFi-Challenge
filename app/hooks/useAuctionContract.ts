@@ -45,15 +45,18 @@ export function useAuctionContract() {
   useEffect(() => {
     if (!domaLoading && !domaError) {
       const convertedAuctions: Auction[] = listings.map((listing, index) => {
-        const domainName = listing.token?.name || `domain-${index}`;
-        const token = names.find(name => name.name === domainName);
+        // Find the corresponding name by tokenId
+        const token = names.find(name => 
+          name.tokens?.some(t => t.tokenId === listing.tokenId)
+        );
+        const domainName = token?.name || `domain-${index}`;
         
         return {
           id: listing.id,
           auctionId: index + 1,
           seller: listing.offererAddress,
-          nftContract: listing.token?.chain?.networkId || 'eip155:11155111', // Sepolia testnet
-          tokenId: parseInt(listing.token?.tokenId || '0'),
+          nftContract: token?.tokens?.[0]?.chain?.networkId || 'eip155:11155111', // Sepolia testnet
+          tokenId: parseInt(listing.tokenId || '0'),
           startingPrice: listing.price,
           reservePrice: listing.price, // Using listing price as reserve
           currentPrice: listing.price,
@@ -72,7 +75,12 @@ export function useAuctionContract() {
 
       // Add some tokenized names that aren't listed yet as potential auctions
       const unlistedNames = names.filter(name => 
-        !listings.some(listing => listing.token?.name === name.name)
+        !listings.some(listing => {
+          const token = names.find(n => 
+            n.tokens?.some(t => t.tokenId === listing.tokenId)
+          );
+          return token?.name === name.name;
+        })
       ).slice(0, 5);
 
       const potentialAuctions: Auction[] = unlistedNames.map((name, index) => ({
