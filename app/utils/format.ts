@@ -9,3 +9,8 @@ export function formatShort(n: number, digits = 2): string {
   if (x >= 1_000) return `${neg}${(x / 1_000).toFixed(digits)}K`;
   return `${neg}${x.toFixed(2)}`;
 }
+
+export function formatAddress(address: string): string {
+  if (!address) return '';
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}

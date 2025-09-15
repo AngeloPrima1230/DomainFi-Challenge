@@ -263,7 +263,9 @@ export function useDomaMarketplace() {
           buyer: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
           expiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
           createdAt: new Date().toISOString(),
-          status: 'active'
+          status: 'active',
+          orderbook: 'DOMA',
+          contractAddress: '0x0000000000000000000000000000000000000000',
         }
       ]);
     } catch (err) {
@@ -275,7 +277,7 @@ export function useDomaMarketplace() {
   // Create a new listing using SDK
   const createListing = async (listing: Omit<DomaListing, 'id' | 'createdAt' | 'status'>) => {
     try {
-      if (!sdk || !address || !chain) {
+      if (!sdk || !address) {
         throw new Error('SDK, wallet, or chain not available');
       }
 

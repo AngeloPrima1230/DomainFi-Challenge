@@ -7,7 +7,7 @@ import { DomaOffer } from '../hooks/useDomaMarketplace';
 interface PlaceOfferModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (offer: Partial<DomaOffer>) => Promise<void>;
+  onSubmit: (offer: Omit<DomaOffer, 'id' | 'createdAt' | 'status'>) => Promise<DomaOffer>;
   listing?: any; // Optional listing to pre-fill data
 }
 
@@ -40,7 +40,6 @@ export default function PlaceOfferModal({ isOpen, onClose, onSubmit, listing }: 
         currency: formData.currency,
         buyer: address,
         expiresAt,
-        chain: '11155111',
         orderbook: 'DOMA',
         contractAddress: '0x0000000000000000000000000000000000000000',
       });

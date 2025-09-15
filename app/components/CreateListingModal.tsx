@@ -7,7 +7,7 @@ import { DomaListing } from '../hooks/useDomaMarketplace';
 interface CreateListingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (listing: Partial<DomaListing>) => Promise<void>;
+  onSubmit: (listing: Omit<DomaListing, 'id' | 'createdAt' | 'status'>) => Promise<DomaListing>;
 }
 
 export default function CreateListingModal({ isOpen, onClose, onSubmit }: CreateListingModalProps) {

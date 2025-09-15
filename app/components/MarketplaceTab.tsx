@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useDomaMarketplace, DomaListing, DomaOffer } from '../hooks/useDomaMarketplace';
 import { useAccount } from 'wagmi';
 import { formatUnits } from 'viem';
-import { formatShort } from '../utils/format';
+import { formatAddress } from '../utils/format';
 import FeeCalculator from './FeeCalculator';
 
 interface MarketplaceTabProps {
@@ -77,7 +77,6 @@ export default function MarketplaceTab({ className = '' }: MarketplaceTabProps) 
         currency: offerData.currency || 'ETH',
         buyer: address,
         expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days
-        chain: '11155111',
         orderbook: 'DOMA',
         contractAddress: '0x0000000000000000000000000000000000000000',
       });
@@ -212,7 +211,7 @@ export default function MarketplaceTab({ className = '' }: MarketplaceTabProps) 
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Seller:</span>
-                      <span className="text-sm font-mono">{formatShort(listing.seller)}</span>
+                      <span className="text-sm font-mono">{formatAddress(listing.seller)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Expires:</span>
@@ -275,7 +274,7 @@ export default function MarketplaceTab({ className = '' }: MarketplaceTabProps) 
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Buyer:</span>
-                      <span className="text-sm font-mono">{formatShort(offer.buyer)}</span>
+                      <span className="text-sm font-mono">{formatAddress(offer.buyer)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Expires:</span>

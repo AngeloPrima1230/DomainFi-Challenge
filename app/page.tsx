@@ -11,7 +11,7 @@ import MarketplaceTab from './components/MarketplaceTab';
 import CreateListingModal from './components/CreateListingModal';
 import PlaceOfferModal from './components/PlaceOfferModal';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { useAccount, useNetwork, useSwitchNetwork } from 'wagmi';
+import { useAccount } from 'wagmi';
 import { sepolia } from 'wagmi/chains';
 import { formatUnits } from 'viem';
 import { useTokenPrices } from './hooks/useTokenPrices';
@@ -83,8 +83,6 @@ export default function Home() {
   });
 
   const { address, isConnected } = useAccount();
-  const { chain } = useNetwork();
-  const { switchNetwork } = useSwitchNetwork();
 
   // USD pricing
   const { getUsdRate } = useTokenPrices();
