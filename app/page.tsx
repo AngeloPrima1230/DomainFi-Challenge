@@ -63,7 +63,7 @@ export default function Home() {
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
-  const [showMarketplace, setShowMarketplace] = useState(false);
+  const [showMarketplace, setShowMarketplace] = useState(true);
   const [allListings, setAllListings] = useState<any[]>([]);
 
   const hoursFetching = 1;

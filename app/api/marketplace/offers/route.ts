@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const take = parseInt(searchParams.get('take') || '100');
     const orderbook = searchParams.get('orderbook') || 'DOMA';
 
-    // For now, we'll return empty offers since the Doma API doesn't have a direct offers endpoint
+    // For now, return empty offers since the Doma API doesn't have a direct offers endpoint
     // In a real implementation, you would query the subgraph for offer data
     return NextResponse.json({
       success: true,

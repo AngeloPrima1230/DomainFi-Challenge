@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
       },
       body: JSON.stringify({
         query: `
-          query GetListings($skip: Int = 0, $take: Int = 100, $orderbook: String) {
-            listings(skip: $skip, take: $take, orderbook: $orderbook) {
+          query GetListings($skip: Int = 0, $take: Int = 100) {
+            listings(skip: $skip, take: $take) {
               items {
                 id
                 externalId
@@ -28,7 +28,6 @@ export async function GET(request: NextRequest) {
                 currency {
                   symbol
                   decimals
-                  address
                 }
                 offererAddress
                 orderbook
@@ -42,7 +41,7 @@ export async function GET(request: NextRequest) {
             }
           }
         `,
-        variables: { skip, take, orderbook }
+        variables: { skip, take }
       }),
     });
 
@@ -83,7 +82,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`${DOMA_API_URL}/v1/orderbook/list`, {
+    const response = await fetch(`${DOMA_API_URL}/v1/orderbook/listing`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

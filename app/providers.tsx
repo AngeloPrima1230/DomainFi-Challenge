@@ -4,11 +4,30 @@ import { RainbowKitProvider, connectorsForWallets } from '@rainbow-me/rainbowkit
 import { createConfig, WagmiProvider } from 'wagmi';
 import { sepolia } from 'wagmi/chains';
 import { http } from 'viem';
-import { metaMaskWallet, coinbaseWallet } from '@rainbow-me/rainbowkit/wallets';
+import { defineChain } from 'viem';
+import { metaMaskWallet } from '@rainbow-me/rainbowkit/wallets';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import '@rainbow-me/rainbowkit/styles.css';
 
-const chains = [sepolia] as const;
+// Define Doma testnet
+const domaTestnet = defineChain({
+  id: 97476,
+  name: 'Doma Testnet',
+  nativeCurrency: {
+    name: 'Doma Ether',
+    symbol: 'ETH',
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: { http: ['https://rpc-testnet.doma.xyz'] },
+    public: { http: ['https://rpc-testnet.doma.xyz'] },
+  },
+  blockExplorers: {
+    default: { name: 'Doma Explorer', url: 'https://explorer-testnet.doma.xyz' },
+  },
+});
+
+const chains = [domaTestnet, sepolia] as const;
 
 // Create a client
 const queryClient = new QueryClient();
@@ -18,7 +37,6 @@ const connectors = connectorsForWallets([
     groupName: 'Recommended',
     wallets: [
       metaMaskWallet,
-      coinbaseWallet,
     ],
   },
 ], {
@@ -30,6 +48,7 @@ const wagmiConfig = createConfig({
   chains,
   connectors,
   transports: {
+    [domaTestnet.id]: http(),
     [sepolia.id]: http(),
   },
 });

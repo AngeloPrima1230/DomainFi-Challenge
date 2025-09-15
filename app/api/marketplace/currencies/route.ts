@@ -7,16 +7,9 @@ const API_KEY = process.env.NEXT_PUBLIC_DOMA_API_KEY || 'v1.8f6347c32950c1bfaedc
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const chainId = searchParams.get('chainId');
-    const contractAddress = searchParams.get('contractAddress');
+    const chainId = searchParams.get('chainId') || 'eip155:97476'; // Default to Doma testnet
+    const contractAddress = searchParams.get('contractAddress') || '0x2f3463756C59387D6Cd55b034100caf7ECfc757b'; // USDC on Doma testnet
     const orderbook = searchParams.get('orderbook') || 'DOMA';
-
-    if (!chainId || !contractAddress) {
-      return NextResponse.json(
-        { success: false, error: 'Missing chainId or contractAddress' },
-        { status: 400 }
-      );
-    }
 
     const response = await fetch(
       `${DOMA_API_URL}/v1/orderbook/currencies/${chainId}/${contractAddress}/${orderbook}`,
@@ -32,11 +25,7 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-
-    return NextResponse.json({
-      success: true,
-      data: data.currencies || [],
-    });
+    return NextResponse.json(data.currencies || []);
 
   } catch (error: any) {
     console.error('Error fetching supported currencies:', error);

@@ -71,6 +71,19 @@ export function useDomaMarketplace() {
           source: 'domainfi-challenge',
           chains: [
             {
+              id: 97476, // Doma testnet
+              name: 'Doma Testnet',
+              nativeCurrency: {
+                name: 'Doma Ether',
+                symbol: 'ETH',
+                decimals: 18,
+              },
+              rpcUrls: {
+                default: { http: ['https://rpc-testnet.doma.xyz'] },
+                public: { http: ['https://rpc-testnet.doma.xyz'] },
+              },
+            },
+            {
               id: 11155111, // Sepolia testnet
               name: 'Sepolia',
               nativeCurrency: {
@@ -81,19 +94,6 @@ export function useDomaMarketplace() {
               rpcUrls: {
                 default: { http: ['https://sepolia.infura.io/v3/your-project-id'] },
                 public: { http: ['https://sepolia.infura.io/v3/your-project-id'] },
-              },
-            },
-            {
-              id: 84532, // Base Sepolia testnet
-              name: 'Base Sepolia',
-              nativeCurrency: {
-                name: 'Base Sepolia Ether',
-                symbol: 'ETH',
-                decimals: 18,
-              },
-              rpcUrls: {
-                default: { http: ['https://sepolia.base.org'] },
-                public: { http: ['https://sepolia.base.org'] },
               },
             },
           ],
@@ -109,8 +109,8 @@ export function useDomaMarketplace() {
         console.log('Doma SDK initialized successfully');
         
         // Fetch supported currencies and fees
-        await fetchSupportedCurrencies(domaSDK);
-        await fetchMarketplaceFees(domaSDK);
+        await fetchSupportedCurrencies();
+        await fetchMarketplaceFees();
         
       } catch (err) {
         console.error('Error initializing Doma SDK:', err);
@@ -122,18 +122,14 @@ export function useDomaMarketplace() {
   }, []);
 
   // Fetch supported currencies
-  const fetchSupportedCurrencies = async (sdk: DomaOrderbookSDK) => {
+  const fetchSupportedCurrencies = async () => {
     try {
-      const chainId = 'eip155:11155111' as const; // Sepolia testnet
-      const contractAddress = '0x0000000000000000000000000000000000000000'; // Mock contract address
-      
-      const currencies = await sdk.getSupportedCurrencies({
-        chainId,
-        orderbook: OrderbookType.DOMA,
-        contractAddress,
-      });
-      
-      setSupportedCurrencies(Array.isArray(currencies) ? currencies : []);
+      const response = await fetch('/api/marketplace/currencies');
+      if (!response.ok) {
+        throw new Error('Failed to fetch currencies');
+      }
+      const currencies = await response.json();
+      setSupportedCurrencies(currencies);
       console.log('Supported currencies:', currencies);
     } catch (err) {
       console.error('Error fetching supported currencies:', err);
@@ -141,73 +137,28 @@ export function useDomaMarketplace() {
   };
 
   // Fetch marketplace fees
-  const fetchMarketplaceFees = async (sdk: DomaOrderbookSDK) => {
+  const fetchMarketplaceFees = async () => {
     try {
-      const chainId = 'eip155:11155111'; // Sepolia testnet
-      const contractAddress = '0x0000000000000000000000000000000000000000'; // Mock contract address
-      
-      // Get fees from API
-      const response = await fetch(`${DOMA_API_URL}/v1/orderbook/fee/DOMA/${chainId}/${contractAddress}`, {
-        headers: {
-          'API-Key': API_KEY,
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        const fees: MarketplaceFees = {
-          protocolFee: 0.5, // 0.5% Doma protocol fee
-          royaltyFee: 0, // Will be calculated per token
-          totalFee: 0.5,
-          feeReceiver: '0x2E7cC63800e77BB8c662c45Ef33D1cCc23861532',
-        };
-        setMarketplaceFees(fees);
+      const response = await fetch('/api/marketplace/fees');
+      if (!response.ok) {
+        throw new Error('Failed to fetch fees');
       }
+      const fees = await response.json();
+      setMarketplaceFees(fees);
+      console.log('Marketplace fees:', fees);
     } catch (err) {
       console.error('Error fetching marketplace fees:', err);
+      setError('Failed to fetch marketplace fees');
     }
   };
 
-  // Fetch marketplace listings using SDK
+  // Fetch marketplace listings using local API
   const fetchListings = async () => {
     try {
       setLoading(true);
       
-      // Fetch listings from Doma Subgraph
-      const response = await fetch(`${DOMA_API_URL}/graphql`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'API-Key': API_KEY,
-        },
-        body: JSON.stringify({
-          query: `
-            query GetListings($skip: Int = 0, $take: Int = 100) {
-              listings(skip: $skip, take: $take, orderbook: "DOMA") {
-                items {
-                  id
-                  externalId
-                  price
-                  currency {
-                    symbol
-                    decimals
-                    address
-                  }
-                  offererAddress
-                  orderbook
-                  tokenId
-                  expiresAt
-                  createdAt
-                  updatedAt
-                }
-                totalCount
-                hasNextPage
-              }
-            }
-          `,
-          variables: { skip: 0, take: 100 }
-        }),
-      });
+      // Fetch listings from our local API
+      const response = await fetch('/api/marketplace/listings');
 
       if (response.ok) {
         const data = await response.json();
@@ -224,7 +175,7 @@ export function useDomaMarketplace() {
           expiresAt: listing.expiresAt,
           createdAt: listing.createdAt,
           status: new Date(listing.expiresAt) > new Date() ? 'active' : 'sold',
-          chain: '11155111',
+          chain: '97476',
           orderbook: listing.orderbook as 'DOMA' | 'OPENSEA',
           contractAddress: '0x0000000000000000000000000000000000000000',
           orderId: listing.externalId,
@@ -247,27 +198,14 @@ export function useDomaMarketplace() {
   // Fetch marketplace offers
   const fetchOffers = async () => {
     try {
-      if (sdk) {
-        // Try to fetch using the SDK
-        console.log('Fetching offers with SDK...');
+      const response = await fetch('/api/marketplace/offers');
+      if (response.ok) {
+        const data = await response.json();
+        setOffers(data);
+        console.log('Fetched offers:', data.length);
+      } else {
+        setOffers([]);
       }
-      
-      // Fallback to example data
-      setOffers([
-        {
-          id: '1',
-          tokenId: '1',
-          name: 'example.com',
-          price: '0.08',
-          currency: 'ETH',
-          buyer: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-          expiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
-          createdAt: new Date().toISOString(),
-          status: 'active',
-          orderbook: 'DOMA',
-          contractAddress: '0x0000000000000000000000000000000000000000',
-        }
-      ]);
     } catch (err) {
       console.error('Error fetching Doma offers:', err);
       setOffers([]);
@@ -387,8 +325,8 @@ export function useDomaMarketplace() {
     placeOffer,
     acceptOffer,
     cancelListing,
-    fetchSupportedCurrencies: () => sdk && fetchSupportedCurrencies(sdk),
-    fetchMarketplaceFees: () => sdk && fetchMarketplaceFees(sdk),
+    fetchSupportedCurrencies,
+    fetchMarketplaceFees,
   };
 }
 
