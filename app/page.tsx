@@ -55,24 +55,11 @@ export default function LandingPage() {
           {/* Compact Logo and Title */}
           <div className="mb-8">
             <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-              <svg width="80" height="75" viewBox="0 0 237 223" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path fillRule="evenodd" clipRule="evenodd" d="M201.397 51.9995L129.228 4.29099C122.54 -0.1303 113.858 -0.130298 107.169 4.291L37.7618 50.1738C35.9248 51.3881 33.9758 52.4238 31.9413 53.2667V53.2667C12.6064 61.2769 0 80.1449 0 101.073V107C0 113.075 4.92487 118 11 118H35V162C35 195.689 62.3106 223 96 223H141.426C175.338 223 202.741 195.339 202.423 161.428L201.397 51.9995ZM139 128.5H97C92.0294 128.5 88 132.529 88 137.5V189C88 193.971 92.0294 198 97 198H139C143.971 198 148 193.971 148 189V137.5C148 132.529 143.971 128.5 139 128.5Z" fill="url(#paint0_linear_landing)"/>
-                <path d="M201.397 51.9995L202.025 118.981L225.5 118.981C231.518 118.981 236.397 114.102 236.397 108.084V106.929C236.397 84.0406 224.843 59.832 203.348 52.3193C202.722 52.1007 202.06 51.9998 201.397 51.9995V51.9995Z" fill="url(#paint1_linear_landing)"/>
-                <defs>
-                  <linearGradient id="paint0_linear_landing" x1="175" y1="36" x2="48" y2="209" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#44296D"/>
-                    <stop offset="0.341346" stopColor="#178AC6"/>
-                    <stop offset="0.764423" stopColor="#C95189"/>
-                    <stop offset="1" stopColor="#EF9854"/>
-                  </linearGradient>
-                  <linearGradient id="paint1_linear_landing" x1="175" y1="36" x2="48" y2="209" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#44296D"/>
-                    <stop offset="0.341346" stopColor="#178AC6"/>
-                    <stop offset="0.764423" stopColor="#C95189"/>
-                    <stop offset="1" stopColor="#EF9854"/>
-                  </linearGradient>
-                </defs>
-              </svg>
+              <img 
+                src="/logo.svg" 
+                alt="TAGHAUS Logo" 
+                className="w-full h-full object-contain"
+              />
               </div>
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">
             Find Your
@@ -154,14 +141,14 @@ export default function LandingPage() {
           <div className="flex flex-wrap justify-center gap-4 mb-8">
             <button
               onClick={() => router.push('/marketplace')}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
+              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               Browse Marketplace
             </button>
             {isConnected && (
             <button
                 onClick={() => router.push('/dashboard')}
-                className="bg-gradient-to-r from-slate-800/40 to-purple-900/40 backdrop-blur-md border border-purple-500/30 text-white hover:from-slate-800/60 hover:to-purple-900/60 hover:border-purple-400/50 px-6 py-3 rounded-xl text-base font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
+                className="bg-gradient-to-r from-slate-800/40 to-purple-900/40 backdrop-blur-md border border-purple-500/30 text-white hover:from-slate-800/60 hover:to-purple-900/60 hover:border-purple-400/50 px-6 py-3 rounded-xl text-base font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
               >
                 My Dashboard
             </button>
@@ -176,7 +163,7 @@ export default function LandingPage() {
                 <button
                   key={tld}
                   onClick={() => setSearchTerm(searchTerm.split('.')[0] + tld)}
-                  className="px-3 py-1.5 bg-gradient-to-r from-slate-800/30 to-purple-900/30 border border-purple-500/20 text-purple-300 hover:from-slate-800/50 hover:to-purple-900/50 hover:text-white hover:border-purple-400/40 rounded-lg transition-all duration-200 text-sm font-medium"
+                  className="px-3 py-1.5 bg-gradient-to-r from-slate-800/30 to-purple-900/30 border border-purple-500/20 text-purple-300 hover:from-slate-800/50 hover:to-purple-900/50 hover:text-white hover:border-purple-400/40 rounded-lg transition-all duration-200 text-sm font-medium hover:shadow-md"
                 >
                   {tld}
                 </button>

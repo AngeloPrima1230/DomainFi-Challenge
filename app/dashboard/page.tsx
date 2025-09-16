@@ -71,15 +71,11 @@ export default function DashboardPage() {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent mb-2">My TAGHAUS Dashboard</h1>
-              <p className="text-purple-300/70 text-sm">
-                {address?.slice(0, 6)}...{address?.slice(-4)} • 
-                <span className="ml-1">{ownedDomains.length} domain{ownedDomains.length !== 1 ? 's' : ''}</span>
-              </p>
+              <h1 className="text-2xl font-bold text-white mb-2">Dashboard</h1>
             </div>
             <button
               onClick={() => setIsCreateAuctionOpen(true)}
-              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
+              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               Create Auction
             </button>
@@ -142,7 +138,7 @@ export default function DashboardPage() {
         {/* Compact Owned Domains Section */}
         <div className="bg-gradient-to-br from-slate-800/20 via-purple-900/20 to-slate-800/20 backdrop-blur-xl rounded-xl border border-purple-500/20 shadow-2xl">
           <div className="p-4 border-b border-purple-500/20">
-            <h2 className="text-xl font-bold text-white">My Tokenized Domains</h2>
+            <h2 className="text-md font-bold text-white">My NFT Domains</h2>
           </div>
           
           <div className="p-6">
@@ -174,7 +170,7 @@ export default function DashboardPage() {
                 {ownedDomains.map((domain, index) => (
                   <div
                     key={`${domain.name}-${index}`}
-                    className="bg-gradient-to-br from-slate-800/40 to-purple-900/40 backdrop-blur-md rounded-lg p-4 border border-purple-500/20 hover:border-purple-400/40 transition-all hover:scale-105 cursor-pointer shadow-lg"
+                    className="bg-gradient-to-br from-slate-800/40 to-purple-900/40 backdrop-blur-md rounded-lg p-4 border border-purple-500/20 hover:border-purple-400/40 hover:bg-gradient-to-br hover:from-slate-800/60 hover:to-purple-900/60 transition-all cursor-pointer shadow-lg hover:shadow-xl"
                     onClick={() => openDomainDetails(domain)}
                   >
                     <div className="flex items-center justify-between mb-2">
@@ -206,10 +202,10 @@ export default function DashboardPage() {
                     </div>
                     
                     <div className="flex space-x-2">
-                      <button className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg">
+                      <button className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl">
                         Manage
                       </button>
-                      <button className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg">
+                      <button className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl">
                         List for Sale
                       </button>
                     </div>

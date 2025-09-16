@@ -29,39 +29,26 @@ export default function Header() {
           {/* Logo */}
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 flex items-center justify-center">
-              <svg width="32" height="30" viewBox="0 0 237 223" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path fillRule="evenodd" clipRule="evenodd" d="M201.397 51.9995L129.228 4.29099C122.54 -0.1303 113.858 -0.130298 107.169 4.291L37.7618 50.1738C35.9248 51.3881 33.9758 52.4238 31.9413 53.2667V53.2667C12.6064 61.2769 0 80.1449 0 101.073V107C0 113.075 4.92487 118 11 118H35V162C35 195.689 62.3106 223 96 223H141.426C175.338 223 202.741 195.339 202.423 161.428L201.397 51.9995ZM139 128.5H97C92.0294 128.5 88 132.529 88 137.5V189C88 193.971 92.0294 198 97 198H139C143.971 198 148 193.971 148 189V137.5C148 132.529 143.971 128.5 139 128.5Z" fill="url(#paint0_linear_header)"/>
-                <path d="M201.397 51.9995L202.025 118.981L225.5 118.981C231.518 118.981 236.397 114.102 236.397 108.084V106.929C236.397 84.0406 224.843 59.832 203.348 52.3193C202.722 52.1007 202.06 51.9998 201.397 51.9995V51.9995Z" fill="url(#paint1_linear_header)"/>
-                <defs>
-                  <linearGradient id="paint0_linear_header" x1="175" y1="36" x2="48" y2="209" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#44296D"/>
-                    <stop offset="0.341346" stopColor="#178AC6"/>
-                    <stop offset="0.764423" stopColor="#C95189"/>
-                    <stop offset="1" stopColor="#EF9854"/>
-                  </linearGradient>
-                  <linearGradient id="paint1_linear_header" x1="175" y1="36" x2="48" y2="209" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#44296D"/>
-                    <stop offset="0.341346" stopColor="#178AC6"/>
-                    <stop offset="0.764423" stopColor="#C95189"/>
-                    <stop offset="1" stopColor="#EF9854"/>
-                  </linearGradient>
-                </defs>
-              </svg>
+              <img 
+                src="/logo.svg" 
+                alt="TAGHAUS Logo" 
+                className="w-full h-full object-contain"
+              />
             </div>
             <div>
-              <span className="text-lg font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">TAGHAUS</span>
-              <p className="text-xs text-purple-300/70 -mt-1">Powered by Doma</p>
+              <span className="text-2xl font-bold text-white tracking-tight">TAGHAUS</span>
+              <p className="text-xs text-purple-300/70 -mt-1 font-medium">Powered by Doma</p>
             </div>
           </div>
           
           {/* Centered Navigation */}
-          <nav className="flex items-center space-x-8">
+          <nav className="flex items-center space-x-1">
             <button
               onClick={() => router.push('/')}
-              className={`text-sm font-semibold transition-all duration-200 ${
+              className={`px-5 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 ${
                 pathname === '/' 
-                  ? 'text-purple-400 bg-purple-500/20 px-3 py-1.5 rounded-lg' 
-                  : 'text-white/80 hover:text-purple-300 hover:bg-purple-500/10 px-3 py-1.5 rounded-lg'
+                  ? 'bg-gradient-to-r from-purple-500/50 to-pink-500/50 text-white border-2 border-purple-400/70 shadow-lg' 
+                  : 'text-white/70 hover:text-white hover:bg-gradient-to-r hover:from-purple-500/25 hover:to-pink-500/25 hover:border-2 hover:border-purple-400/50'
               }`}
             >
               Search
@@ -69,10 +56,10 @@ export default function Header() {
             {isConnected && (
               <button
                 onClick={() => router.push('/dashboard')}
-                className={`text-sm font-semibold transition-all duration-200 ${
+                className={`px-5 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 ${
                   pathname === '/dashboard' 
-                    ? 'text-purple-400 bg-purple-500/20 px-3 py-1.5 rounded-lg' 
-                    : 'text-white/80 hover:text-purple-300 hover:bg-purple-500/10 px-3 py-1.5 rounded-lg'
+                    ? 'bg-gradient-to-r from-purple-500/50 to-pink-500/50 text-white border-2 border-purple-400/70 shadow-lg' 
+                    : 'text-white/70 hover:text-white hover:bg-gradient-to-r hover:from-purple-500/25 hover:to-pink-500/25 hover:border-2 hover:border-purple-400/50'
                 }`}
               >
                 Dashboard
@@ -80,10 +67,10 @@ export default function Header() {
             )}
             <button
               onClick={() => router.push('/marketplace')}
-              className={`text-sm font-semibold transition-all duration-200 ${
+              className={`px-5 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 ${
                 pathname === '/marketplace' 
-                  ? 'text-purple-400 bg-purple-500/20 px-3 py-1.5 rounded-lg' 
-                  : 'text-white/80 hover:text-purple-300 hover:bg-purple-500/10 px-3 py-1.5 rounded-lg'
+                  ? 'bg-gradient-to-r from-purple-500/50 to-pink-500/50 text-white border-2 border-purple-400/70 shadow-lg' 
+                  : 'text-white/70 hover:text-white hover:bg-gradient-to-r hover:from-purple-500/25 hover:to-pink-500/25 hover:border-2 hover:border-purple-400/50'
               }`}
             >
               Marketplace
@@ -94,9 +81,9 @@ export default function Header() {
           <div className="flex items-center">
             {isConnected ? (
               <div className="relative group">
-                <button className="flex items-center space-x-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-md rounded-lg px-4 py-2 border border-purple-400/30 hover:from-purple-500/30 hover:to-pink-500/30 transition-all duration-200 shadow-lg">
+                <button className="flex items-center space-x-2 bg-gradient-to-r from-purple-500/25 to-pink-500/25 backdrop-blur-md rounded-lg px-4 py-2.5 border border-purple-400/40 hover:from-purple-500/45 hover:to-pink-500/45 hover:border-purple-400/60 transition-all duration-200 shadow-lg">
                   <div className="w-2.5 h-2.5 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full shadow-sm"></div>
-                  <span className="text-sm text-white font-mono font-medium">
+                  <span className="text-sm text-white font-mono font-semibold">
                     {address?.slice(0, 6)}...{address?.slice(-4)}
                   </span>
                   <svg className="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -55,16 +55,19 @@ export interface MarketplaceFees {
 export function useDomaMarketplace() {
   const [listings, setListings] = useState<DomaListing[]>([]);
   const [offers, setOffers] = useState<DomaOffer[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sdk, setSdk] = useState<DomaOrderbookSDK | null>(null);
   const [supportedCurrencies, setSupportedCurrencies] = useState<SupportedCurrency[]>([]);
   const [marketplaceFees, setMarketplaceFees] = useState<MarketplaceFees | null>(null);
+  const [initialized, setInitialized] = useState(false);
   
   const { address } = useAccount();
 
-  // Initialize SDK
+  // Initialize SDK (only once)
   useEffect(() => {
+    if (initialized) return;
+    
     const initializeSDK = async () => {
       try {
         const domaSDK = new DomaOrderbookSDK({
@@ -106,11 +109,22 @@ export function useDomaMarketplace() {
         });
         
         setSdk(domaSDK);
+        setInitialized(true);
         console.log('Doma SDK initialized successfully');
         
-        // Fetch supported currencies and fees
-        await fetchSupportedCurrencies();
-        await fetchMarketplaceFees();
+        // Load static data immediately (no API calls)
+        setSupportedCurrencies([
+          { address: '0x0000000000000000000000000000000000000000', symbol: 'ETH', decimals: 18, name: 'Ethereum' },
+          { address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', symbol: 'USDC', decimals: 6, name: 'USD Coin' },
+          { address: '0x4200000000000000000000000000000000000006', symbol: 'WETH', decimals: 18, name: 'Wrapped Ether' }
+        ]);
+        
+        setMarketplaceFees({
+          protocolFee: 0.5,
+          royaltyFee: 0,
+          totalFee: 0.5,
+          feeReceiver: '0x0000000000000000000000000000000000000000'
+        });
         
       } catch (err) {
         console.error('Error initializing Doma SDK:', err);
@@ -119,7 +133,7 @@ export function useDomaMarketplace() {
     };
 
     initializeSDK();
-  }, []);
+  }, [initialized]);
 
   // Fetch supported currencies
   const fetchSupportedCurrencies = async () => {
@@ -152,7 +166,7 @@ export function useDomaMarketplace() {
     }
   };
 
-  // Fetch marketplace listings using local API
+  // Fetch marketplace listings using local API (async, non-blocking)
   const fetchListings = async () => {
     try {
       setLoading(true);
@@ -306,11 +320,20 @@ export function useDomaMarketplace() {
     }
   };
 
+  // Load data when component mounts (non-blocking)
   useEffect(() => {
-    if (!sdk) return;
-    fetchListings();
-    fetchOffers();
-  }, [sdk]);
+    if (!initialized) return;
+    
+    // Load data in background without blocking UI
+    const loadData = async () => {
+      await Promise.all([
+        fetchListings(),
+        fetchOffers()
+      ]);
+    };
+    
+    loadData();
+  }, [initialized]);
 
   return {
     listings,
