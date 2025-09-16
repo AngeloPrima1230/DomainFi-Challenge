@@ -1,29 +1,35 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Geist } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
 import { Toaster } from 'react-hot-toast';
+import Header from './components/Header';
+import Footer from './components/Footer';
 
-const inter = Inter({ subsets: ['latin'] });
+const geist = Geist({ 
+  subsets: ['latin'],
+  variable: '--font-geist',
+  weight: ['300', '400', '500', '600', '700']
+});
 
 export const metadata: Metadata = {
-  title: 'DomainFi Auction Marketplace',
-  description: 'Decentralized auction platform for tokenized domains built on Doma Protocol',
-  keywords: ['DomainFi', 'Auction', 'NFT', 'Domains', 'Doma Protocol', 'Web3'],
-  authors: [{ name: 'DomainFi Challenge Team' }],
+  title: 'TAGHAUS - Decentralized Domain Marketplace',
+  description: 'Discover, trade, and own digital domains on the blockchain. Powered by Doma Protocol.',
+  keywords: ['TAGHAUS', 'Domain', 'Marketplace', 'NFT', 'Domains', 'Doma Protocol', 'Web3', 'Blockchain'],
+  authors: [{ name: 'TAGHAUS Team' }],
   icons: {
-    icon: '/favicon.svg',
+    icon: '/logo.svg',
   },
   openGraph: {
-    title: 'DomainFi Auction Marketplace',
-    description: 'Decentralized auction platform for tokenized domains built on Doma Protocol',
+    title: 'TAGHAUS - Decentralized Domain Marketplace',
+    description: 'Discover, trade, and own digital domains on the blockchain. Powered by Doma Protocol.',
     type: 'website',
-    url: 'https://domainfi-auction.vercel.app',
+    url: 'https://taghaus.vercel.app',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'DomainFi Auction Marketplace',
-    description: 'Decentralized auction platform for tokenized domains built on Doma Protocol',
+    title: 'TAGHAUS - Decentralized Domain Marketplace',
+    description: 'Discover, trade, and own digital domains on the blockchain. Powered by Doma Protocol.',
   },
 };
 
@@ -33,14 +39,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" className="h-full">
+      <body className={`${geist.className} h-full overflow-x-hidden`}>
         <Providers>
-          {children}
+          <div className="min-h-screen flex flex-col">
+            <Header />
+            <main className="flex-1">
+              {children}
+            </main>
+            <Footer />
+          </div>
           <Toaster
             position="top-right"
             toastOptions={{
-              duration: 4000,
+              duration: 3000,
               style: {
                 background: '#363636',
                 color: '#fff',
