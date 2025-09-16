@@ -8,6 +8,7 @@ import PlaceOfferModal from '../components/PlaceOfferModal';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function MarketplacePage() {
   const { 
@@ -18,15 +19,15 @@ export default function MarketplacePage() {
   
   const { address, isConnected } = useAccount();
   const router = useRouter();
+  const { getThemeClasses } = useTheme();
   const [showCreateListing, setShowCreateListing] = useState(false);
   const [showPlaceOffer, setShowPlaceOffer] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-
+    <div className={`min-h-screen ${getThemeClasses('background')}`}>
       {/* Compact Main Content */}
       <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6">
-        <div className="bg-gradient-to-br from-slate-800/20 via-purple-900/20 to-slate-800/20 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20 shadow-2xl">
+        <div className={`${getThemeClasses('section')} rounded-xl p-6`}>
           <MarketplaceTab />
         </div>
       </main>

@@ -221,7 +221,7 @@ NEXT_PUBLIC_DOMA_API_KEY=v1.8f6347c32950c1bfaedc4b29676fcaa14a6586ed8586338b24fd
 
 ---
 
-**Last Updated**: January 2025
+**Last Updated**: September 2025
 **Status**: Active Development
 **API Status**: Mostly Working (currencies ✅, fees ✅, listings ✅, offers ✅)
 **Real Data**: 154,836+ listings available on Doma marketplace

@@ -7,6 +7,7 @@ import { http } from 'viem';
 import { defineChain } from 'viem';
 import { metaMaskWallet } from '@rainbow-me/rainbowkit/wallets';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from './contexts/ThemeContext';
 import '@rainbow-me/rainbowkit/styles.css';
 
 // Define Doma testnet
@@ -55,12 +56,14 @@ const wagmiConfig = createConfig({
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <QueryClientProvider client={queryClient}>
-      <WagmiProvider config={wagmiConfig}>
-        <RainbowKitProvider>
-          {children}
-        </RainbowKitProvider>
-      </WagmiProvider>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <WagmiProvider config={wagmiConfig}>
+          <RainbowKitProvider>
+            {children}
+          </RainbowKitProvider>
+        </WagmiProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
