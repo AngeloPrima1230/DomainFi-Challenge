@@ -26,17 +26,13 @@ function checkRateLimit(ip: string, limit: number = 3, windowMs: number = 60000)
 // Get client IP
 function getClientIP(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0].trim();
+
   const realIP = request.headers.get('x-real-ip');
-  
-  if (forwarded) {
-    return forwarded.split(',')[0].trim();
-  }
-  
-  if (realIP) {
-    return realIP;
-  }
-  
-  return request.ip || 'unknown';
+  if (realIP) return realIP;
+
+  // dev/local fallback
+  return '127.0.0.1';
 }
 
 // Validation function
