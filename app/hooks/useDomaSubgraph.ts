@@ -588,7 +588,7 @@ export function useDomaSubgraph() {
         fetchPolicy: 'network-only',
       });
 
-      return data.names?.items || [];
+      return data?.names?.items || [];
     } catch (err) {
       console.error('Error searching names:', err);
       return [];
