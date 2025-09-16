@@ -29,9 +29,15 @@ function getClientIP(request: NextRequest): string {
   if (forwarded) return forwarded.split(',')[0].trim();
 
   const realIP = request.headers.get('x-real-ip');
-  if (realIP) return realIP;
-
-  // dev/local fallback
+  
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+  
+  if (realIP) {
+    return realIP;
+  }
+  
   return '127.0.0.1';
 }
 
