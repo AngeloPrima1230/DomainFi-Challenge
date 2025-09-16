@@ -1,42 +1,69 @@
 'use client';
 
 import { RainbowKitProvider, connectorsForWallets } from '@rainbow-me/rainbowkit';
-import { configureChains, createConfig, WagmiConfig } from 'wagmi';
-import { polygonMumbai, sepolia } from 'wagmi/chains';
-import { publicProvider } from 'wagmi/providers/public';
-import { metaMaskWallet, coinbaseWallet } from '@rainbow-me/rainbowkit/wallets';
+import { createConfig, WagmiProvider } from 'wagmi';
+import { sepolia } from 'wagmi/chains';
+import { http } from 'viem';
+import { defineChain } from 'viem';
+import { metaMaskWallet } from '@rainbow-me/rainbowkit/wallets';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from './contexts/ThemeContext';
 import '@rainbow-me/rainbowkit/styles.css';
 
-const { chains, publicClient } = configureChains(
-  [sepolia, polygonMumbai],
-  [publicProvider()]
-);
+// Define Doma testnet
+const domaTestnet = defineChain({
+  id: 97476,
+  name: 'Doma Testnet',
+  nativeCurrency: {
+    name: 'Doma Ether',
+    symbol: 'ETH',
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: { http: ['https://rpc-testnet.doma.xyz'] },
+    public: { http: ['https://rpc-testnet.doma.xyz'] },
+  },
+  blockExplorers: {
+    default: { name: 'Doma Explorer', url: 'https://explorer-testnet.doma.xyz' },
+  },
+});
 
-// Use specific wallets instead of getDefaultWallets to avoid WalletConnect issues
+const chains = [domaTestnet, sepolia] as const;
+
+// Create a client
+const queryClient = new QueryClient();
+
 const connectors = connectorsForWallets([
   {
     groupName: 'Recommended',
     wallets: [
-      metaMaskWallet({ chains, projectId: 'demo-project-id' }),
-      coinbaseWallet({ appName: 'DomainFi Auction Marketplace', chains }),
+      metaMaskWallet,
     ],
   },
-]);
+], {
+  projectId: 'demo-project-id',
+  appName: 'DomainFi Auction Marketplace',
+});
 
 const wagmiConfig = createConfig({
-  autoConnect: false, // Disable auto-connect to avoid WebSocket issues
+  chains,
   connectors,
-  publicClient,
-  // Remove webSocketPublicClient to avoid connection errors
+  transports: {
+    [domaTestnet.id]: http(),
+    [sepolia.id]: http(),
+  },
 });
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <WagmiConfig config={wagmiConfig}>
-      <RainbowKitProvider chains={chains}>
-        {children}
-      </RainbowKitProvider>
-    </WagmiConfig>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <WagmiProvider config={wagmiConfig}>
+          <RainbowKitProvider>
+            {children}
+          </RainbowKitProvider>
+        </WagmiProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
-

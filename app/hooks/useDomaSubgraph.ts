@@ -2,10 +2,45 @@ import { useState, useEffect } from 'react';
 import { ApolloClient, InMemoryCache, gql, createHttpLink, from } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 
+console.log('📁 useDomaSubgraph.ts file loaded');
+
 // GraphQL query for tokenized names using Doma Protocol
 const GET_TOKENIZED_NAMES = gql`
-  query GetTokenizedNames($skip: Int = 0, $take: Int = 100) {
-    names(skip: $skip, take: $take, sortOrder: DESC) {
+  query GetTokenizedNames(
+    $skip: Int = 0, 
+    $take: Int = 100, 
+    $ownedBy: [AddressCAIP10!], 
+    $name: String, 
+    $networkIds: [String!], 
+    $registrarIanaIds: [Int!], 
+    $tlds: [String!], 
+    $fractionalized: Boolean, 
+    $listed: Boolean, 
+    $active: Boolean, 
+    $priceRangeMin: Float, 
+    $priceRangeMax: Float, 
+    $priceRangeCurrency: String, 
+    $claimStatus: NamesQueryClaimStatus, 
+    $sortBy: NamesQuerySortBy
+  ) {
+    names(
+      skip: $skip, 
+      take: $take, 
+      sortOrder: DESC,
+      ownedBy: $ownedBy,
+      name: $name,
+      networkIds: $networkIds,
+      registrarIanaIds: $registrarIanaIds,
+      tlds: $tlds,
+      fractionalized: $fractionalized,
+      listed: $listed,
+      active: $active,
+      priceRangeMin: $priceRangeMin,
+      priceRangeMax: $priceRangeMax,
+      priceRangeCurrency: $priceRangeCurrency,
+      claimStatus: $claimStatus,
+      sortBy: $sortBy
+    ) {
       items {
         name
         expiresAt
@@ -88,31 +123,29 @@ const GET_NAME_DETAILS = gql`
         listings {
           id
           price
-          currency
+          currency {
+            symbol
+            decimals
+          }
           expiresAt
           orderbook
-        }
-      }
-      activities {
-        items {
-          type
-          blockNumber
-          blockTimestamp
-          transactionHash
         }
       }
     }
   }
 `;
 
-// GraphQL query for listings
 const GET_LISTINGS = gql`
-  query GetListings($skip: Float = 0, $take: Float = 100) {
+  query GetListings($skip: Int = 0, $take: Int = 100) {
     listings(skip: $skip, take: $take) {
       items {
         id
         externalId
         price
+        currency {
+          symbol
+          decimals
+        }
         offererAddress
         orderbook
         tokenId
@@ -132,7 +165,7 @@ const GET_LISTINGS = gql`
 
 // GraphQL query for name activities
 const GET_NAME_ACTIVITIES = gql`
-  query GetNameActivities($name: String!, $skip: Float, $take: Float) {
+  query GetNameActivities($name: String!, $skip: Int, $take: Int) {
     nameActivities(name: $name, skip: $skip, take: $take, sortOrder: DESC) {
       items {
         __typename
@@ -188,7 +221,7 @@ const GET_NAME_ACTIVITIES = gql`
 
 // GraphQL query for token activities
 const GET_TOKEN_ACTIVITIES = gql`
-  query GetTokenActivities($tokenId: String!, $skip: Float, $take: Float) {
+  query GetTokenActivities($tokenId: String!, $skip: Int, $take: Int) {
     tokenActivities(tokenId: $tokenId, skip: $skip, take: $take, sortOrder: DESC) {
       items {
         __typename
@@ -247,12 +280,24 @@ const GET_TOKEN_ACTIVITIES = gql`
 const GET_COMMAND_STATUS = gql`
   query GetCommandStatus($correlationId: String!) {
     command(correlationId: $correlationId) {
-      correlationId
       type
       status
+      source
+      serverCommandId
+      clientCommandId
+      failureReason
+      registrar { name ianaId }
       createdAt
       updatedAt
-      error
+    }
+  }
+`;
+
+//GraphQL query for names total count
+const GET_NAMES_COUNT = gql`
+  query GetNamesCount {
+    names(skip: 0, take: 1) {
+      totalCount
     }
   }
 `;
@@ -265,11 +310,10 @@ const httpLink = createHttpLink({
 // Add authentication headers - Use the correct API-Key header
 const authLink = setContext((_, { headers }) => {
   const apiKey = process.env.NEXT_PUBLIC_DOMA_API_KEY || 'v1.8f6347c32950c1bfaedc4b29676fcaa14a6586ed8586338b24fdfc6c69df8b02';
-  
   return {
     headers: {
       ...headers,
-      'API-Key': apiKey,
+      ...(apiKey ? { 'API-Key': apiKey as string } : {}),
       'Content-Type': 'application/json',
     }
   };
@@ -278,6 +322,14 @@ const authLink = setContext((_, { headers }) => {
 const client = new ApolloClient({
   link: from([authLink, httpLink]),
   cache: new InMemoryCache(),
+  defaultOptions: {
+    watchQuery: {
+      errorPolicy: 'all',
+    },
+    query: {
+      errorPolicy: 'all',
+    },
+  },
 });
 
 export interface TokenizedName {
@@ -313,19 +365,14 @@ export interface Listing {
   price: string;
   offererAddress: string;
   orderbook: 'DOMA' | 'OPENSEA';
-  currency: string;
+  currency: {
+    symbol: string;
+    decimals: number;
+  };
+  tokenId: string;
   expiresAt: string;
   createdAt: string;
   updatedAt: string;
-  token: {
-    tokenId: string;
-    name: string;
-    ownerAddress: string;
-    chain: {
-      name: string;
-      networkId: string;
-    };
-  };
 }
 
 export interface PaginatedResponse<T> {
@@ -374,44 +421,87 @@ export function useDomaSubgraph() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [namesTotalCount, setNamesTotalCount] = useState(0);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    fetchTokenizedNames();
-    fetchListings();
-  }, []);
+    if (initialized) return; // Prevent multiple initializations
+    
+    console.log('🔄 Initializing Doma Subgraph hook');
+    setInitialized(true);
+    
+    // Load initial data
+    fetchNameCount();
+    fetchTokenizedNames('', 0, 100); // Load first 100 names without search term (API max 100)
+    fetchListings('', 0, 100); // Load first 100 listings without search term
+  }, [initialized]);
 
-  const fetchTokenizedNames = async (skip = 0, take = 100) => {
+  const fetchTokenizedNames = async (
+    name?: string, 
+    skip = 0, 
+    take = 15, 
+    append = false,
+    filters?: {
+      ownedBy?: string[];
+      networkIds?: string[];
+      registrarIanaIds?: number[];
+      tlds?: string[];
+      fractionalized?: boolean;
+      listed?: boolean;
+      active?: boolean;
+      priceRangeMin?: number;
+      priceRangeMax?: number;
+      priceRangeCurrency?: string;
+      claimStatus?: 'CLAIMED' | 'UNCLAIMED' | 'ALL';
+      sortBy?: string;
+    }
+  ) => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log('Fetching tokenized names with API key:', process.env.NEXT_PUBLIC_DOMA_API_KEY ? 'Present' : 'Missing');
+      // Only log on first fetch or when filters change
+      if (skip === 0 && !append) {
+        console.log('🔍 Fetching tokenized names with filters:', filters);
+      }
       
       const { data } = await client.query({
         query: GET_TOKENIZED_NAMES,
-        variables: { skip: Number(skip), take: Number(take) },
+        variables: { 
+          skip: Number(skip), 
+          take: Number(take),
+          name: name || null,
+          ...filters
+        },
         fetchPolicy: 'network-only',
       });
 
-      if (data?.names?.items) {
-        setNames(data.names.items);
-        console.log('Successfully fetched tokenized names:', data.names.items.length);
+      const newItems = data?.names?.items || [];
+      
+      // Only log on first fetch or when filters change
+      if (skip === 0 && !append) {
+        console.log('✅ Fetched', newItems.length, 'names (total available:', data?.names?.totalCount, ')');
       }
+
+      setNames(prev => append ? [...prev, ...newItems] : newItems);
+
+      if(!name || name === '' || name === null || name === undefined) {
+        setNamesTotalCount(data?.names?.totalCount ?? 0);
+      }
+
+      return {
+        items: newItems,
+        totalCount: data?.names?.totalCount ?? 0,
+        hasNextPage: data?.names?.hasNextPage ?? false,
+      };
     } catch (err) {
       console.error('Error fetching tokenized names:', err);
-      if (err.graphQLErrors) {
-        err.graphQLErrors.forEach((error: any) => {
-          console.error('GraphQL Error:', error.message, error.extensions);
-        });
-      }
-      // Don't set error for API issues, just log them
-      // setError(err instanceof Error ? err.message : 'Failed to fetch tokenized names');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchListings = async (skip = 0, take = 100) => {
+  const fetchListings = async (name?: string, skip = 0, take = 15, append = false) => {
     try {
       const { data } = await client.query({
         query: GET_LISTINGS,
@@ -419,13 +509,23 @@ export function useDomaSubgraph() {
         fetchPolicy: 'network-only',
       });
 
-      if (data?.listings?.items) {
-        setListings(data.listings.items);
-        console.log('Successfully fetched listings:', data.listings.items.length);
-      }
+      const items = data?.listings?.items || [];
+      const filtered = name
+        ? items.filter((l: any) => {
+            const n = l?.token?.name || l?.name || '';
+            return n.toLowerCase().includes(name.toLowerCase());
+          })
+        : items;
+
+      setListings(prev => append ? [...prev, ...filtered] : filtered);
+
+      return {
+        items: filtered,
+        totalCount: data?.listings?.totalCount ?? 0,
+        hasNextPage: data?.listings?.hasNextPage ?? false,
+      };
     } catch (err) {
       console.error('Error fetching listings:', err);
-      // Don't set error for API issues, just log them
     }
   };
 
@@ -497,49 +597,13 @@ export function useDomaSubgraph() {
 
   const getNamesByOwner = async (ownerAddress: string): Promise<TokenizedName[]> => {
     try {
-      const { data } = await client.query({
-        query: gql`
-          query GetNamesByOwner($ownedBy: [AddressCAIP10!]!) {
-            names(ownedBy: $ownedBy, take: 100) {
-              items {
-                name
-                expiresAt
-                tokenizedAt
-                eoi
-                registrar {
-                  name
-                  ianaId
-                }
-                nameservers {
-                  ldhName
-                }
-                dsKeys {
-                  keyTag
-                  algorithm
-                  digestType
-                  digest
-                }
-                transferLock
-                claimedBy
-                tokens {
-                  tokenId
-                  networkId
-                  ownerAddress
-                  type
-                  chain {
-                    name
-                    networkId
-                  }
-                }
-              }
-            }
-          }
-        `,
-        variables: { ownedBy: [ownerAddress] },
-        fetchPolicy: 'network-only',
+      console.log('🔍 Fetching domains for owner:', ownerAddress);
+      // Use the main query with ownedBy filter instead of a separate query
+      const result = await fetchTokenizedNames('', 0, 100, false, {
+        ownedBy: [ownerAddress]
       });
-
-      return data.names?.items || [];
+      console.log('✅ Found', result?.items?.length || 0, 'domains for owner');
+      return result?.items || [];
     } catch (err) {
       console.error('Error fetching names by owner:', err);
       return [];
@@ -602,6 +666,25 @@ export function useDomaSubgraph() {
     }
   };
 
+  const fetchNameCount = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data } = await client.query({
+        query: GET_NAMES_COUNT,
+        fetchPolicy: 'network-only',
+      });
+
+      setNamesTotalCount(data?.names?.totalCount ?? 0);
+    } catch (err) {
+      console.error('Error fetching names count:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch names count');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     names,
     listings,
@@ -615,6 +698,9 @@ export function useDomaSubgraph() {
     getNameActivities,
     getTokenActivities,
     getCommandStatus,
+    // new:
+    namesTotalCount,
+    fetchNameCount,
   };
 }
 

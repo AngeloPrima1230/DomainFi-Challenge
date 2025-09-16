@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { DomaOrderbookSDK, OrderbookType } from '@doma-protocol/orderbook-sdk';
+import { useAccount } from 'wagmi';
 
 // Doma API configuration
-const API_KEY = 'v1.8f6347c32950c1bfaedc4b29676fcaa14a6586ed8586338b24fdfc6c69df8b02';
+const API_KEY = process.env.NEXT_PUBLIC_DOMA_API_KEY || 'v1.8f6347c32950c1bfaedc4b29676fcaa14a6586ed8586338b24fdfc6c69df8b02';
+const DOMA_API_URL = process.env.NEXT_PUBLIC_DOMA_API_URL || 'https://api-testnet.doma.xyz';
 
 export interface DomaListing {
   id: string;
@@ -16,6 +18,9 @@ export interface DomaListing {
   status: 'active' | 'sold' | 'cancelled';
   chain: string;
   registrar?: string;
+  orderbook: 'DOMA' | 'OPENSEA';
+  contractAddress: string;
+  orderId?: string;
 }
 
 export interface DomaOffer {
@@ -28,26 +33,62 @@ export interface DomaOffer {
   expiresAt: string;
   createdAt: string;
   status: 'active' | 'accepted' | 'cancelled';
+  orderbook: 'DOMA' | 'OPENSEA';
+  contractAddress: string;
+  orderId?: string;
+}
+
+export interface SupportedCurrency {
+  address: string;
+  symbol: string;
+  decimals: number;
+  name: string;
+}
+
+export interface MarketplaceFees {
+  protocolFee: number;
+  royaltyFee: number;
+  totalFee: number;
+  feeReceiver: string;
 }
 
 export function useDomaMarketplace() {
   const [listings, setListings] = useState<DomaListing[]>([]);
   const [offers, setOffers] = useState<DomaOffer[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sdk, setSdk] = useState<DomaOrderbookSDK | null>(null);
+  const [supportedCurrencies, setSupportedCurrencies] = useState<SupportedCurrency[]>([]);
+  const [marketplaceFees, setMarketplaceFees] = useState<MarketplaceFees | null>(null);
+  const [initialized, setInitialized] = useState(false);
+  
+  const { address } = useAccount();
 
-  // Initialize SDK
+  // Initialize SDK (only once)
   useEffect(() => {
+    if (initialized) return;
+    
     const initializeSDK = async () => {
       try {
         const domaSDK = new DomaOrderbookSDK({
           source: 'domainfi-challenge',
           chains: [
             {
+              id: 97476, // Doma testnet
+              name: 'Doma Testnet',
+              nativeCurrency: {
+                name: 'Doma Ether',
+                symbol: 'ETH',
+                decimals: 18,
+              },
+              rpcUrls: {
+                default: { http: ['https://rpc-testnet.doma.xyz'] },
+                public: { http: ['https://rpc-testnet.doma.xyz'] },
+              },
+            },
+            {
               id: 11155111, // Sepolia testnet
               name: 'Sepolia',
-              network: 'sepolia',
               nativeCurrency: {
                 name: 'Sepolia Ether',
                 symbol: 'ETH',
@@ -59,8 +100,8 @@ export function useDomaMarketplace() {
               },
             },
           ],
-                     apiClientOptions: {
-             baseUrl: 'https://api-testnet.doma.xyz',
+          apiClientOptions: {
+             baseUrl: DOMA_API_URL,
              defaultHeaders: {
                'API-Key': API_KEY,
              },
@@ -68,39 +109,96 @@ export function useDomaMarketplace() {
         });
         
         setSdk(domaSDK);
+        setInitialized(true);
         console.log('Doma SDK initialized successfully');
+        
+        // Load static data immediately (no API calls)
+        setSupportedCurrencies([
+          { address: '0x0000000000000000000000000000000000000000', symbol: 'ETH', decimals: 18, name: 'Ethereum' },
+          { address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', symbol: 'USDC', decimals: 6, name: 'USD Coin' },
+          { address: '0x4200000000000000000000000000000000000006', symbol: 'WETH', decimals: 18, name: 'Wrapped Ether' }
+        ]);
+        
+        setMarketplaceFees({
+          protocolFee: 0.5,
+          royaltyFee: 0,
+          totalFee: 0.5,
+          feeReceiver: '0x0000000000000000000000000000000000000000'
+        });
+        
       } catch (err) {
         console.error('Error initializing Doma SDK:', err);
-        // Continue with fallback data
+        setError('Failed to initialize Doma SDK');
       }
     };
 
     initializeSDK();
-  }, []);
+  }, [initialized]);
 
-  // Fetch marketplace listings using SDK
+  // Fetch supported currencies
+  const fetchSupportedCurrencies = async () => {
+    try {
+      const response = await fetch('/api/marketplace/currencies');
+      if (!response.ok) {
+        throw new Error('Failed to fetch currencies');
+      }
+      const currencies = await response.json();
+      setSupportedCurrencies(currencies);
+      console.log('Supported currencies:', currencies);
+    } catch (err) {
+      console.error('Error fetching supported currencies:', err);
+    }
+  };
+
+  // Fetch marketplace fees
+  const fetchMarketplaceFees = async () => {
+    try {
+      const response = await fetch('/api/marketplace/fees');
+      if (!response.ok) {
+        throw new Error('Failed to fetch fees');
+      }
+      const fees = await response.json();
+      setMarketplaceFees(fees);
+      console.log('Marketplace fees:', fees);
+    } catch (err) {
+      console.error('Error fetching marketplace fees:', err);
+      setError('Failed to fetch marketplace fees');
+    }
+  };
+
+  // Fetch marketplace listings using local API (async, non-blocking)
   const fetchListings = async () => {
     try {
       setLoading(true);
       
-      if (sdk) {
-        // Try to fetch using the SDK
-        try {
-          const supportedCurrencies = await sdk.getSupportedCurrencies({
-            chainId: 'eip155:11155111',
-            orderbook: OrderbookType.DOMA,
-            contractAddress: '0x0000000000000000000000000000000000000000', // Mock contract address
-          });
-          console.log('Supported currencies:', supportedCurrencies);
-        } catch (err) {
-          console.log('SDK call failed, using fallback data');
-        }
+      // Fetch listings from our local API
+      const response = await fetch('/api/marketplace/listings');
+
+      if (response.ok) {
+        const data = await response.json();
+        const listingsData = data.data?.listings?.items || [];
         
-        // Try to fetch real listings from the API
-        console.log('Attempting to fetch real listings from Doma API...');
+        // Convert to our format
+        const convertedListings: DomaListing[] = listingsData.map((listing: any) => ({
+          id: listing.id,
+          tokenId: listing.tokenId,
+          name: `domain-${listing.tokenId}`, // Will be enriched with actual domain name
+          price: listing.price,
+          currency: listing.currency?.symbol || 'ETH',
+          seller: listing.offererAddress,
+          expiresAt: listing.expiresAt,
+          createdAt: listing.createdAt,
+          status: new Date(listing.expiresAt) > new Date() ? 'active' : 'sold',
+          chain: '97476',
+          orderbook: listing.orderbook as 'DOMA' | 'OPENSEA',
+          contractAddress: '0x0000000000000000000000000000000000000000',
+          orderId: listing.externalId,
+        }));
+        
+        setListings(convertedListings);
+        console.log('Fetched listings:', convertedListings.length);
       } else {
-        // No SDK available, try to fetch from API directly
-        console.log('SDK not available, attempting direct API call...');
+        console.error('Failed to fetch listings:', response.status);
         setListings([]);
       }
     } catch (err) {
@@ -114,25 +212,15 @@ export function useDomaMarketplace() {
   // Fetch marketplace offers
   const fetchOffers = async () => {
     try {
-      if (sdk) {
-        // Try to fetch using the SDK
-        console.log('Fetching offers with SDK...');
+      const response = await fetch('/api/marketplace/offers');
+      if (response.ok) {
+        const data = await response.json();
+        const offersArray = data.data?.items || [];
+        setOffers(offersArray);
+        console.log('Fetched offers:', offersArray.length);
+      } else {
+        setOffers([]);
       }
-      
-      // Fallback to example data
-      setOffers([
-        {
-          id: '1',
-          tokenId: '1',
-          name: 'example.com',
-          price: '0.08',
-          currency: 'ETH',
-          buyer: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-          expiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
-          createdAt: new Date().toISOString(),
-          status: 'active'
-        }
-      ]);
     } catch (err) {
       console.error('Error fetching Doma offers:', err);
       setOffers([]);
@@ -142,20 +230,27 @@ export function useDomaMarketplace() {
   // Create a new listing using SDK
   const createListing = async (listing: Omit<DomaListing, 'id' | 'createdAt' | 'status'>) => {
     try {
-      if (sdk) {
-        console.log('Creating listing with SDK...');
-        // SDK implementation would go here
-        // For now, simulate the creation
+      if (!sdk || !address) {
+        throw new Error('SDK, wallet, or chain not available');
       }
+
+      console.log('Creating listing with Doma Orderbook API...');
       
-      // Simulate listing creation
+      // For now, we'll simulate the listing creation
+      // In a real implementation, you would:
+      // 1. Create a SeaPort order using the SDK
+      // 2. Sign the order with the user's wallet
+      // 3. Submit to Doma Orderbook API
+      
       const simulatedListing: DomaListing = {
         ...listing,
-        id: `sim-${Date.now()}`,
+        id: `doma-${Date.now()}`,
         createdAt: new Date().toISOString(),
         status: 'active'
       };
+      
       setListings(prev => [simulatedListing, ...prev]);
+      console.log('Listing created successfully:', simulatedListing.id);
       return simulatedListing;
     } catch (err) {
       console.error('Error creating listing:', err);
@@ -177,7 +272,9 @@ export function useDomaMarketplace() {
         ...offer,
         id: `sim-${Date.now()}`,
         createdAt: new Date().toISOString(),
-        status: 'active'
+        status: 'active',
+        orderbook: 'DOMA',
+        contractAddress: '0x0000000000000000000000000000000000000000',
       };
       setOffers(prev => [simulatedOffer, ...prev]);
       return simulatedOffer;
@@ -223,16 +320,20 @@ export function useDomaMarketplace() {
     }
   };
 
+  // Load data when component mounts (non-blocking)
   useEffect(() => {
-    if (sdk) {
-      fetchListings();
-      fetchOffers();
-    } else {
-      // Load fallback data immediately if SDK is not available
-      fetchListings();
-      fetchOffers();
-    }
-  }, [sdk]);
+    if (!initialized) return;
+    
+    // Load data in background without blocking UI
+    const loadData = async () => {
+      await Promise.all([
+        fetchListings(),
+        fetchOffers()
+      ]);
+    };
+    
+    loadData();
+  }, [initialized]);
 
   return {
     listings,
@@ -240,12 +341,16 @@ export function useDomaMarketplace() {
     loading,
     error,
     sdk,
+    supportedCurrencies,
+    marketplaceFees,
     fetchListings,
     fetchOffers,
     createListing,
     placeOffer,
     acceptOffer,
     cancelListing,
+    fetchSupportedCurrencies,
+    fetchMarketplaceFees,
   };
 }
 
