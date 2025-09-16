@@ -80,9 +80,9 @@ export default function DomainDetailsModal({
   };
   
   const seller = getOwner();
-  const registrar = typeof domain.registrar === 'object' && domain.registrar?.name 
-    ? domain.registrar.name 
-    : domain.registrar || 'Unknown Registrar';
+  const registrar = domain.registrar 
+    ? (typeof domain.registrar === 'object' ? (domain.registrar as any).name || 'Unknown' : domain.registrar)
+    : 'Unknown Registrar';
   const expiryDate = domain.expiresAt || domain.domainExpiry;
   const isTokenized = domain.isTokenized || domain.type === 'tokenized_name';
   const tokenizedAt = domain.tokenizedAt;

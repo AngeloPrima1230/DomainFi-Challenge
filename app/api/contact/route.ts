@@ -36,7 +36,7 @@ function getClientIP(request: NextRequest): string {
     return realIP;
   }
   
-  return request.ip || 'unknown';
+  return 'unknown';
 }
 
 // Validation function
