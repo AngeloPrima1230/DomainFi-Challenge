@@ -91,37 +91,15 @@ export default function Home() {
       }
     };
     run();
-  }, [isConnected, address, getNamesByOwner]);
+  }, [isConnected, address]); // Removed getNamesByOwner from dependencies
 
-  // Debug logging
+  // Debug logging (reduced frequency)
   useEffect(() => {
-    if (isConnected && address) {
-      console.log('Connected wallet address:', address);
-      console.log('Total names loaded:', names.length);
-      console.log('Names with tokens:', names.filter(n => n.tokens?.length > 0).length);
-      console.log('Owned domains found:', ownedDomains.length);
-      
-      // Log first few names with tokens for debugging
-      const namesWithTokens = names.filter(n => n.tokens?.length > 0).slice(0, 5);
-      namesWithTokens.forEach(name => {
-        console.log(`Domain: ${name.name}`, {
-          tokens: name.tokens?.map(t => {
-            const tokenOwner = t.ownerAddress?.toLowerCase();
-            const cleanTokenOwner = tokenOwner?.includes(':') 
-              ? tokenOwner.split(':').pop() 
-              : tokenOwner;
-            return {
-              tokenId: t.tokenId,
-              ownerAddress: t.ownerAddress,
-              cleanOwnerAddress: cleanTokenOwner,
-              walletAddress: address?.toLowerCase(),
-              matchesWallet: cleanTokenOwner === address?.toLowerCase()
-            };
-          })
-        });
-      });
+    if (isConnected && address && ownedDomains.length > 0) {
+      console.log('🎯 Wallet connected:', address.slice(0, 6) + '...' + address.slice(-4));
+      console.log('📊 Owned domains:', ownedDomains.length);
     }
-  }, [isConnected, address, names, ownedDomains]);
+  }, [isConnected, address, ownedDomains.length]); // Only log when ownedDomains count changes
 
   // USD pricing
   const { getUsdRate } = useTokenPrices();

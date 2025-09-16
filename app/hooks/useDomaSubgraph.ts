@@ -6,8 +6,41 @@ console.log('📁 useDomaSubgraph.ts file loaded');
 
 // GraphQL query for tokenized names using Doma Protocol
 const GET_TOKENIZED_NAMES = gql`
-  query GetTokenizedNames($skip: Int = 0, $take: Int = 100, $name: String) {
-    names(skip: $skip, take: $take, sortOrder: DESC) {
+  query GetTokenizedNames(
+    $skip: Int = 0, 
+    $take: Int = 100, 
+    $ownedBy: [AddressCAIP10!], 
+    $name: String, 
+    $networkIds: [String!], 
+    $registrarIanaIds: [Int!], 
+    $tlds: [String!], 
+    $fractionalized: Boolean, 
+    $listed: Boolean, 
+    $active: Boolean, 
+    $priceRangeMin: Float, 
+    $priceRangeMax: Float, 
+    $priceRangeCurrency: String, 
+    $claimStatus: NamesQueryClaimStatus, 
+    $sortBy: NamesQuerySortBy
+  ) {
+    names(
+      skip: $skip, 
+      take: $take, 
+      sortOrder: DESC,
+      ownedBy: $ownedBy,
+      name: $name,
+      networkIds: $networkIds,
+      registrarIanaIds: $registrarIanaIds,
+      tlds: $tlds,
+      fractionalized: $fractionalized,
+      listed: $listed,
+      active: $active,
+      priceRangeMin: $priceRangeMin,
+      priceRangeMax: $priceRangeMax,
+      priceRangeCurrency: $priceRangeCurrency,
+      claimStatus: $claimStatus,
+      sortBy: $sortBy
+    ) {
       items {
         name
         expiresAt
@@ -96,14 +129,6 @@ const GET_NAME_DETAILS = gql`
           }
           expiresAt
           orderbook
-        }
-      }
-      activities {
-        items {
-          type
-          blockNumber
-          blockTimestamp
-          transactionHash
         }
       }
     }
@@ -255,12 +280,15 @@ const GET_TOKEN_ACTIVITIES = gql`
 const GET_COMMAND_STATUS = gql`
   query GetCommandStatus($correlationId: String!) {
     command(correlationId: $correlationId) {
-      correlationId
       type
       status
+      source
+      serverCommandId
+      clientCommandId
+      failureReason
+      registrar { name ianaId }
       createdAt
       updatedAt
-      error
     }
   }
 `;
@@ -389,41 +417,71 @@ export interface CommandStatus {
 }
 
 export function useDomaSubgraph() {
-  console.log('🚀 useDomaSubgraph hook initialized');
-  
   const [names, setNames] = useState<TokenizedName[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [namesTotalCount, setNamesTotalCount] = useState(0);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    console.log('🔄 useEffect triggered - loading initial data');
+    if (initialized) return; // Prevent multiple initializations
+    
+    console.log('🔄 Initializing Doma Subgraph hook');
+    setInitialized(true);
+    
     // Load initial data
     fetchNameCount();
-    fetchTokenizedNames('', 0, 1000); // Load first 1000 names without search term
+    fetchTokenizedNames('', 0, 100); // Load first 100 names without search term (API max 100)
     fetchListings('', 0, 100); // Load first 100 listings without search term
-  }, []);
+  }, [initialized]);
 
-  const fetchTokenizedNames = async (name?: string, skip = 0, take = 15, append = false) => {
+  const fetchTokenizedNames = async (
+    name?: string, 
+    skip = 0, 
+    take = 15, 
+    append = false,
+    filters?: {
+      ownedBy?: string[];
+      networkIds?: string[];
+      registrarIanaIds?: number[];
+      tlds?: string[];
+      fractionalized?: boolean;
+      listed?: boolean;
+      active?: boolean;
+      priceRangeMin?: number;
+      priceRangeMax?: number;
+      priceRangeCurrency?: string;
+      claimStatus?: 'CLAIMED' | 'UNCLAIMED' | 'ALL';
+      sortBy?: string;
+    }
+  ) => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log('Fetching tokenized names with API key:', process.env.NEXT_PUBLIC_DOMA_API_KEY ? 'Present' : 'Missing');
-      console.log('GraphQL URL:', process.env.NEXT_PUBLIC_DOMA_SUBGRAPH_URL || 'https://api-testnet.doma.xyz/graphql');
+      // Only log on first fetch or when filters change
+      if (skip === 0 && !append) {
+        console.log('🔍 Fetching tokenized names with filters:', filters);
+      }
       
       const { data } = await client.query({
         query: GET_TOKENIZED_NAMES,
-        variables: { skip: Number(skip), take: Number(take) },
+        variables: { 
+          skip: Number(skip), 
+          take: Number(take),
+          name: name || null,
+          ...filters
+        },
         fetchPolicy: 'network-only',
       });
 
       const newItems = data?.names?.items || [];
       
-      console.log('GraphQL response:', data);
-      console.log('New items count:', newItems.length);
-      console.log('Total count:', data?.names?.totalCount);
+      // Only log on first fetch or when filters change
+      if (skip === 0 && !append) {
+        console.log('✅ Fetched', newItems.length, 'names (total available:', data?.names?.totalCount, ')');
+      }
 
       setNames(prev => append ? [...prev, ...newItems] : newItems);
 
@@ -539,49 +597,13 @@ export function useDomaSubgraph() {
 
   const getNamesByOwner = async (ownerAddress: string): Promise<TokenizedName[]> => {
     try {
-      const { data } = await client.query({
-        query: gql`
-          query GetNamesByOwner($ownedBy: [AddressCAIP10!]!) {
-            names(ownedBy: $ownedBy, take: 100) {
-              items {
-                name
-                expiresAt
-                tokenizedAt
-                eoi
-                registrar {
-                  name
-                  ianaId
-                }
-                nameservers {
-                  ldhName
-                }
-                dsKeys {
-                  keyTag
-                  algorithm
-                  digestType
-                  digest
-                }
-                transferLock
-                claimedBy
-                tokens {
-                  tokenId
-                  networkId
-                  ownerAddress
-                  type
-                  chain {
-                    name
-                    networkId
-                  }
-                }
-              }
-            }
-          }
-        `,
-        variables: { ownedBy: [ownerAddress] },
-        fetchPolicy: 'network-only',
+      console.log('🔍 Fetching domains for owner:', ownerAddress);
+      // Use the main query with ownedBy filter instead of a separate query
+      const result = await fetchTokenizedNames('', 0, 100, false, {
+        ownedBy: [ownerAddress]
       });
-
-      return data.names?.items || [];
+      console.log('✅ Found', result?.items?.length || 0, 'domains for owner');
+      return result?.items || [];
     } catch (err) {
       console.error('Error fetching names by owner:', err);
       return [];
