@@ -1,0 +1,2155 @@
+"""
+Indicates exactly one field must be supplied and this field must not be `null`.
+"""
+directive @oneOf on INPUT_OBJECT
+
+"""Chain statistics."""
+type ChainStatisticsModel {
+  """Total number of active wallets."""
+  totalActiveWallets: Int!
+
+  """Total number of transactions."""
+  totalTransactions: Int!
+
+  """Total number of tokenized names."""
+  totalNamesTokenized: Int!
+
+  """Total number of tokenized names (cumulative)."""
+  totalNamesTokenizedCumulative: Int!
+
+  """Total revenue in USD."""
+  totalRevenueUsd: Float!
+}
+
+"""Blockchain network information."""
+type ChainModel {
+  """Name of the blockchain network."""
+  name: String!
+
+  """Network ID in CAIP-2 format."""
+  networkId: String!
+
+  """
+  URL template for linking to the address page in the blockchain explorer.
+  """
+  addressUrlTemplate: String
+}
+
+"""Payment information for token transactions."""
+type PaymentInfoModel {
+  """Price of the token in the specified currency."""
+  price: BigInt!
+
+  """Contract address of the payment token."""
+  tokenAddress: String!
+
+  """Symbol of the currency used for payment."""
+  currencySymbol: String!
+}
+
+"""
+The `BigInt` scalar type represents non-fractional signed whole numeric values.
+"""
+scalar BigInt
+
+type RegistrarModel {
+  """Registrar name."""
+  name: String!
+
+  """IANA ID of the registrar."""
+  ianaId: ID!
+
+  """Registrar public keys."""
+  publicKeys: [String!]!
+
+  """Registrar website URL."""
+  websiteUrl: String
+
+  """Registrar support email address."""
+  supportEmail: String
+}
+
+"""Command information for tracking client-initiated operations."""
+type CommandModel {
+  """Type of command."""
+  type: CommandType!
+
+  """Status of the command."""
+  status: CommandStatus!
+
+  """Source of the command."""
+  source: CommandSource!
+
+  """Server command ID."""
+  serverCommandId: String!
+
+  """Client command ID."""
+  clientCommandId: String!
+
+  """Reason for command failure, if any."""
+  failureReason: CommandFailureReason
+
+  """Registrar associated with the command."""
+  registrar: RegistrarModel
+
+  """Date and time when the command was created."""
+  createdAt: DateTime!
+
+  """Date and time when the command was last updated."""
+  updatedAt: DateTime!
+}
+
+"""Command Type"""
+enum CommandType {
+  """Tokenize a domain name."""
+  TOKENIZE
+
+  """(Deprecated) Transfer EOI name from an escrow."""
+  EOI_CLAIM
+
+  """Approve a tokenization request."""
+  APPROVE_TOKENIZATION
+
+  """Reject a tokenization request."""
+  REJECT_TOKENIZATION
+
+  """Approve a claim request for a domain."""
+  APPROVE_CLAIM_REQUEST
+
+  """Reject a claim request for a domain."""
+  REJECT_CLAIM_REQUEST
+
+  """Renew a domain name."""
+  RENEW
+
+  """Update domain (both nameservers and DNSSEC DS keys)."""
+  UPDATE
+
+  """Update nameservers for a domain."""
+  UPDATE_NAMESERVERS
+
+  """Update DNSSEC DS keys for a domain."""
+  UPDATE_DS_KEYS
+
+  """
+  Detokenize a domain name. Checks if current owner has claimed a domain.
+  """
+  DETOKENIZE
+
+  """Delete a domain or token (only for expired domains)."""
+  DELETE
+
+  """Change compliance lock status for an ownership token."""
+  COMPLIANCE_LOCK_STATUS_CHANGE
+
+  """Detokenize a domain due to compliance reasons."""
+  COMPLIANCE_DETOKENIZE
+
+  """Update  metadata for a token."""
+  UPDATE_METADATA
+
+  """Set reverse mapping for an address."""
+  SET_REVERSE_MAPPING
+
+  """Process a voucher payment."""
+  VOUCHER_PAYMENT
+
+  """User-initiated request to tokenize a domain."""
+  REQUEST_TOKENIZATION
+
+  """Transfer hook event."""
+  TRANSFER_HOOK
+
+  """User-initiated request to claim a domain."""
+  REQUEST_CLAIM
+
+  """User-initiated request to detokenize a domain."""
+  REQUEST_DETOKENIZATION
+
+  """User-initiated request to bridge a token."""
+  REQUEST_BRIDGE
+
+  """Unknown or unsupported command type."""
+  UNKNOWN
+}
+
+"""Command Status"""
+enum CommandStatus {
+  """Command is pending."""
+  PENDING
+
+  """Command is finalizing"""
+  FINALIZING
+
+  """Command has been cancelled."""
+  SUCCEEDED
+
+  """Command has failed."""
+  FAILED
+
+  """Command partially succeeded. Used for bulk commands."""
+  PARTIALLY_SUCCEEDED
+}
+
+"""Command Source"""
+enum CommandSource {
+  """Command initiated by the registrar (using Relay API)."""
+  RELAY
+
+  """Command initiated by the user (e.g. Bridge or Claim)."""
+  USER
+}
+
+"""Command Failure Reason"""
+enum CommandFailureReason {
+  """
+  Internal error occurred during command execution. Please contact support.
+  """
+  INTERNAL_ERROR
+
+  """Transaction failed during command execution."""
+  TRANSACTION_FAILED
+  TRANSACTION_RETRY_LIMIT_EXCEEDED
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+"""Nameserver information."""
+type NameServerModel {
+  """LDH (Letter-Digit-Hyphen) name of the nameserver."""
+  ldhName: String!
+}
+
+"""Currency information."""
+type CurrencyModel {
+  """Currency name."""
+  name: String!
+
+  """Currency symbol."""
+  symbol: String!
+
+  """Number of decimals for the currency."""
+  decimals: Int!
+
+  """USD exchange rate for the currency."""
+  usdExchangeRate: Float
+}
+
+"""Secondary sale listing for a tokenized name."""
+type ListingModel {
+  """Listing ID."""
+  id: ID!
+
+  """External order ID."""
+  externalId: String!
+
+  """Listing price."""
+  price: BigInt!
+
+  """Offerer address in CAIP-10 format."""
+  offererAddress: AddressCAIP10!
+
+  """Orderbook type."""
+  orderbook: OrderbookType!
+
+  """Currency used for the listing."""
+  currency: CurrencyModel!
+
+  """Expiration date of the listing."""
+  expiresAt: DateTime!
+
+  """Date and time when the listing was created."""
+  createdAt: DateTime!
+
+  """Date and time when the listing was last updated."""
+  updatedAt: DateTime!
+}
+
+"""A CAIP-10 address type"""
+scalar AddressCAIP10
+
+"""Orderbook Type"""
+enum OrderbookType {
+  """Doma orderbook (primary)."""
+  DOMA
+
+  """OpenSea orderbook."""
+  OPENSEA
+}
+
+"""Offer for a tokenized name."""
+type OfferModel {
+  """Offer ID."""
+  id: ID!
+
+  """External offer ID."""
+  externalId: String!
+
+  """Offer price."""
+  price: BigInt!
+
+  """Offerer address in CAIP-10 format."""
+  offererAddress: AddressCAIP10!
+
+  """Orderbook type."""
+  orderbook: OrderbookType!
+
+  """Currency used for the offer."""
+  currency: CurrencyModel!
+
+  """Expiration date of the offer."""
+  expiresAt: DateTime!
+
+  """Date and time when the offer was created."""
+  createdAt: DateTime!
+}
+
+"""Tokenized name ownership information."""
+type TokenModel {
+  """Token ID."""
+  tokenId: ID!
+
+  """Network ID in CAIP-2 format."""
+  networkId: String!
+
+  """Owner address in CAIP-10 format."""
+  ownerAddress: AddressCAIP10!
+
+  """Type of token."""
+  type: TokenType!
+
+  """Start date of the token validity."""
+  startsAt: DateTime
+
+  """Expiration date of the token."""
+  expiresAt: DateTime!
+
+  """List of activities for the token."""
+  activities: [TokenActivity!]
+
+  """Explorer URL for the token."""
+  explorerUrl: String!
+
+  """Token contract address."""
+  tokenAddress: String!
+
+  """Date and time when the token was created."""
+  createdAt: DateTime!
+
+  """Blockchain network information."""
+  chain: ChainModel!
+
+  """Listings associated with the token."""
+  listings: [ListingModel!]
+
+  """OpenSea collection slug for the token contract."""
+  openseaCollectionSlug: String
+
+  """Whether the orderbook is disabled for this token contract."""
+  orderbookDisabled: Boolean
+}
+
+"""Token Type"""
+enum TokenType {
+  """Ownership token."""
+  OWNERSHIP
+
+  """Synthetic token. Not supported yet."""
+  SYNTHETIC
+}
+
+union TokenActivity = TokenMintedActivity | TokenTransferredActivity | TokenListedActivity | TokenOfferReceivedActivity | TokenListingCancelledActivity | TokenOfferCancelledActivity | TokenPurchasedActivity | TokenFractionalizedActivity | TokenBoughtOutActivity
+
+"""Activity representing a token mint."""
+type TokenMintedActivity {
+  """Type of token activity."""
+  type: TokenActivityType!
+
+  """Network ID in CAIP-2 format."""
+  networkId: String!
+
+  """Transaction hash associated with the activity."""
+  txHash: String
+
+  """Whether the activity is finalized on-chain."""
+  finalized: Boolean!
+
+  """Token ID."""
+  tokenId: String!
+
+  """Date and time when the activity was created."""
+  createdAt: DateTime!
+}
+
+"""Token Activity Type"""
+enum TokenActivityType {
+  """Token was minted."""
+  MINTED
+
+  """Token was transferred."""
+  TRANSFERRED
+
+  """Token was listed for sale in the marketplace"""
+  LISTED
+
+  """An offer was received for the token"""
+  OFFER_RECEIVED
+
+  """A listing for the token was cancelled"""
+  LISTING_CANCELLED
+
+  """An offer for the token was cancelled"""
+  OFFER_CANCELLED
+
+  """Token was purchased in the marketplace"""
+  PURCHASED
+
+  """Token was fractionalized."""
+  FRACTIONALIZED
+
+  """Token was bought out."""
+  BOUGHT_OUT
+}
+
+"""Activity representing a token transfer."""
+type TokenTransferredActivity {
+  """Type of token activity."""
+  type: TokenActivityType!
+
+  """Network ID in CAIP-2 format."""
+  networkId: String!
+
+  """Transaction hash associated with the activity."""
+  txHash: String
+
+  """Whether the activity is finalized on-chain."""
+  finalized: Boolean!
+
+  """Token ID."""
+  tokenId: String!
+
+  """Date and time when the activity was created."""
+  createdAt: DateTime!
+
+  """Address the token was transferred to."""
+  transferredTo: String!
+
+  """Address the token was transferred from."""
+  transferredFrom: String!
+}
+
+"""Activity representing a token listing in the marketplace."""
+type TokenListedActivity {
+  """Type of token activity."""
+  type: TokenActivityType!
+
+  """Network ID in CAIP-2 format."""
+  networkId: String!
+
+  """Transaction hash associated with the activity."""
+  txHash: String
+
+  """Whether the activity is finalized on-chain."""
+  finalized: Boolean!
+
+  """Token ID."""
+  tokenId: String!
+
+  """Date and time when the activity was created."""
+  createdAt: DateTime!
+
+  """Unique identifier for the marketplace order."""
+  orderId: String!
+
+  """Date and time when the listing becomes active."""
+  startsAt: DateTime
+
+  """Date and time when the listing expires."""
+  expiresAt: DateTime!
+
+  """Address of the token seller."""
+  seller: String!
+
+  """Address of the token buyer, if applicable."""
+  buyer: String
+
+  """Payment details for the listing."""
+  payment: PaymentInfoModel!
+
+  """Type of orderbook where the token is listed."""
+  orderbook: OrderbookType!
+}
+
+"""Activity representing an offer received for a token."""
+type TokenOfferReceivedActivity {
+  """Type of token activity."""
+  type: TokenActivityType!
+
+  """Network ID in CAIP-2 format."""
+  networkId: String!
+
+  """Transaction hash associated with the activity."""
+  txHash: String
+
+  """Whether the activity is finalized on-chain."""
+  finalized: Boolean!
+
+  """Token ID."""
+  tokenId: String!
+
+  """Date and time when the activity was created."""
+  createdAt: DateTime!
+
+  """Unique identifier for the marketplace order."""
+  orderId: String!
+
+  """Date and time when the offer expires."""
+  expiresAt: DateTime!
+
+  """Address of the potential buyer making the offer."""
+  buyer: String!
+
+  """Address of the token seller receiving the offer."""
+  seller: String!
+
+  """Payment details for the offer."""
+  payment: PaymentInfoModel!
+
+  """Type of orderbook where the offer was made."""
+  orderbook: OrderbookType!
+}
+
+"""Activity representing a cancelled token listing."""
+type TokenListingCancelledActivity {
+  """Type of token activity."""
+  type: TokenActivityType!
+
+  """Network ID in CAIP-2 format."""
+  networkId: String!
+
+  """Transaction hash associated with the activity."""
+  txHash: String
+
+  """Whether the activity is finalized on-chain."""
+  finalized: Boolean!
+
+  """Token ID."""
+  tokenId: String!
+
+  """Date and time when the activity was created."""
+  createdAt: DateTime!
+
+  """Unique identifier for the cancelled marketplace order."""
+  orderId: String!
+
+  """Reason for cancelling the listing, if provided."""
+  reason: String
+
+  """Type of orderbook where the listing was cancelled."""
+  orderbook: OrderbookType!
+}
+
+"""Activity representing a cancelled offer for a token."""
+type TokenOfferCancelledActivity {
+  """Type of token activity."""
+  type: TokenActivityType!
+
+  """Network ID in CAIP-2 format."""
+  networkId: String!
+
+  """Transaction hash associated with the activity."""
+  txHash: String
+
+  """Whether the activity is finalized on-chain."""
+  finalized: Boolean!
+
+  """Token ID."""
+  tokenId: String!
+
+  """Date and time when the activity was created."""
+  createdAt: DateTime!
+
+  """Unique identifier for the cancelled marketplace order."""
+  orderId: String!
+
+  """Reason for cancelling the offer, if provided."""
+  reason: String
+
+  """Type of orderbook where the offer was cancelled."""
+  orderbook: OrderbookType!
+}
+
+"""Activity representing a token purchase in the marketplace."""
+type TokenPurchasedActivity {
+  """Type of token activity."""
+  type: TokenActivityType!
+
+  """Network ID in CAIP-2 format."""
+  networkId: String!
+
+  """Transaction hash associated with the activity."""
+  txHash: String
+
+  """Whether the activity is finalized on-chain."""
+  finalized: Boolean!
+
+  """Token ID."""
+  tokenId: String!
+
+  """Date and time when the activity was created."""
+  createdAt: DateTime!
+
+  """Unique identifier for the marketplace order."""
+  orderId: String!
+
+  """Date and time when the token was purchased."""
+  purchasedAt: DateTime!
+
+  """Address of the token seller."""
+  seller: String!
+
+  """Address of the token buyer."""
+  buyer: String!
+
+  """Payment details for the purchase."""
+  payment: PaymentInfoModel!
+
+  """Type of orderbook where the token was purchased."""
+  orderbook: OrderbookType!
+}
+
+type TokenFractionalizedActivity {
+  """Type of token activity."""
+  type: TokenActivityType!
+
+  """Network ID in CAIP-2 format."""
+  networkId: String!
+
+  """Transaction hash associated with the activity."""
+  txHash: String
+
+  """Whether the activity is finalized on-chain."""
+  finalized: Boolean!
+
+  """Token ID."""
+  tokenId: String!
+
+  """Date and time when the activity was created."""
+  createdAt: DateTime!
+}
+
+type TokenBoughtOutActivity {
+  """Type of token activity."""
+  type: TokenActivityType!
+
+  """Network ID in CAIP-2 format."""
+  networkId: String!
+
+  """Transaction hash associated with the activity."""
+  txHash: String
+
+  """Whether the activity is finalized on-chain."""
+  finalized: Boolean!
+
+  """Token ID."""
+  tokenId: String!
+
+  """Date and time when the activity was created."""
+  createdAt: DateTime!
+}
+
+"""DNSSEC DS Key information."""
+type DSKeyModel {
+  """DS Key Tag."""
+  keyTag: Int!
+
+  """DS Key Algorithm."""
+  algorithm: Int!
+
+  """DS Key Digest."""
+  digest: String!
+
+  """DS Key Digest Type."""
+  digestType: Int!
+}
+
+type NameFractionalizationParams {
+  """Initial valuation of the name token in quote token."""
+  initialValuation: BigInt!
+
+  """Name of the fractional token."""
+  name: String!
+
+  """Symbol of the fractional token."""
+  symbol: String!
+
+  """Number of decimal places for the fractional token."""
+  decimals: Int!
+
+  """Total supply of the fractional tokens."""
+  totalSupply: BigInt!
+
+  """Type of launchpad used for the token sale (0 - Doma Launchpad)."""
+  launchpadType: Int!
+
+  """Number of tokens allocated for the launchpad sale."""
+  launchpadSupply: BigInt!
+
+  """Launchpad fee in basis points (100 = 1%)."""
+  launchpadFeeBps: Int!
+
+  """Number of tokens allocated for the liquidity pool."""
+  poolSupply: BigInt!
+
+  """Pool creation fee in basis points (100 = 1%)"""
+  poolFeeBps: Int!
+
+  """Initial price per token at launch start."""
+  initialLaunchpadPrice: BigInt!
+
+  """Final price per token at launch end."""
+  finalLaunchpadPrice: BigInt!
+
+  """Launch start date as Unix timestamp in seconds."""
+  launchStartDate: Int!
+
+  """Launch end date as Unix timestamp in seconds."""
+  launchEndDate: Int!
+
+  """Additional encoded data for launchpad. Depends on a launchpad type."""
+  launchpadData: String!
+
+  """Vesting cliff period in seconds before tokens start vesting."""
+  vestingCliffSeconds: Int!
+
+  """Total vesting duration in seconds."""
+  vestingDurationSeconds: Int!
+
+  """Initial price for the liquidity pool after launch."""
+  initialPoolPrice: BigInt!
+
+  """URI pointing to the metadata for the fractional token."""
+  metadataURI: String!
+}
+
+"""Fractional token information for fractionalized names."""
+type FractionalTokenInfoModel {
+  """Unique identifier for the fractional token."""
+  id: ID!
+
+  """Address of the fractional token contract."""
+  address: String!
+
+  """Date and time when the name was fractionalized."""
+  fractionalizedAt: DateTime!
+
+  """Address that fractionalized this name."""
+  fractionalizedBy: AddressCAIP10!
+
+  """Date and time when the fractional tokens were bought out."""
+  boughtOutAt: DateTime
+
+  """Address that bought out the token."""
+  boughtOutBy: AddressCAIP10
+
+  """Price at which the fractional tokens were bought out."""
+  buyoutPrice: BigInt
+
+  """Status of the fractional token (fractionalized, launched, buyout)."""
+  status: FractionalTokenStatus
+
+  """Uniswap V3 pool address from LaunchFinalized event."""
+  poolAddress: String
+
+  """When the launchpad for the fractional token graduated"""
+  graduatedAt: DateTime
+
+  """Uniswap V3 pool address from LaunchFinalized event."""
+  launchpadAddress: String
+
+  """Uniswap V3 pool address from LaunchFinalized event."""
+  vestingWalletAddress: String
+
+  """Blockchain network information."""
+  chain: ChainModel!
+
+  """Parameters for name fractionalization."""
+  params: NameFractionalizationParams!
+
+  """Transaction hash for the fractionalization."""
+  fractionalizedTxHash: String
+
+  """Transaction hash for the buyout."""
+  boughtOutTxHash: String
+
+  """Current fractional token price"""
+  currentPrice: BigInt
+}
+
+"""Status of a fractional token"""
+enum FractionalTokenStatus {
+  """Token is fractionalized and available for primary sale."""
+  FRACTIONALIZED
+
+  """Token is launched and available for secondary sale."""
+  GRADUATION_SUCCESSFUL
+
+  """Token launch failed."""
+  GRADUATION_FAILED
+
+  """Token has been bought out."""
+  BOUGHT_OUT
+}
+
+"""Wallet balance for a fractional token."""
+type WalletBalanceModel {
+  """Fractional token id."""
+  fractionalTokenId: Int!
+
+  """Wallet address (chain-native format)."""
+  address: String!
+
+  """Owned balance."""
+  balance: BigInt!
+
+  """Fractional token information."""
+  fractionalToken: FractionalTokenInfoModel!
+}
+
+"""
+Paginated response for wallet balances. Contains a list of WalletBalanceModel items and pagination metadata.
+"""
+type PaginatedWalletBalanceResponse {
+  """List of items for the current page."""
+  items: [WalletBalanceModel!]!
+
+  """Total number of items matching the query."""
+  totalCount: Int!
+
+  """Number of items per page."""
+  pageSize: Int!
+
+  """Current page number (1-based)."""
+  currentPage: Int!
+
+  """Total number of pages available."""
+  totalPages: Int!
+
+  """Indicates if there is a previous page."""
+  hasPreviousPage: Boolean!
+
+  """Indicates if there is a next page."""
+  hasNextPage: Boolean!
+}
+
+"""Fractionalization history entry with complete information."""
+type NameFractionalTokenInfoModel {
+  """Unique identifier for the fractional token."""
+  id: ID!
+
+  """Address of the fractional token contract."""
+  address: String!
+
+  """Date and time when the name was fractionalized."""
+  fractionalizedAt: DateTime!
+
+  """Address that fractionalized this name."""
+  fractionalizedBy: AddressCAIP10!
+
+  """Date and time when the fractional tokens were bought out."""
+  boughtOutAt: DateTime
+
+  """Address that bought out the token."""
+  boughtOutBy: AddressCAIP10
+
+  """Price at which the fractional tokens were bought out."""
+  buyoutPrice: BigInt
+
+  """Status of the fractional token (fractionalized, launched, buyout)."""
+  status: FractionalTokenStatus
+
+  """Uniswap V3 pool address from LaunchFinalized event."""
+  poolAddress: String
+
+  """When the launchpad for the fractional token graduated"""
+  graduatedAt: DateTime
+
+  """Uniswap V3 pool address from LaunchFinalized event."""
+  launchpadAddress: String
+
+  """Uniswap V3 pool address from LaunchFinalized event."""
+  vestingWalletAddress: String
+
+  """Blockchain network information."""
+  chain: ChainModel!
+
+  """Parameters for name fractionalization."""
+  params: NameFractionalizationParams!
+
+  """Transaction hash for the fractionalization."""
+  fractionalizedTxHash: String
+
+  """Transaction hash for the buyout."""
+  boughtOutTxHash: String
+
+  """Current fractional token price"""
+  currentPrice: BigInt
+
+  """Domain name that was fractionalized."""
+  name: String!
+}
+
+"""
+Paginated response for fractionalization history. Contains a list of FractionalizationHistoryModel items and pagination metadata.
+"""
+type PaginatedFractionalTokenInfoResponse {
+  """List of items for the current page."""
+  items: [NameFractionalTokenInfoModel!]!
+
+  """Total number of items matching the query."""
+  totalCount: Int!
+
+  """Number of items per page."""
+  pageSize: Int!
+
+  """Current page number (1-based)."""
+  currentPage: Int!
+
+  """Total number of pages available."""
+  totalPages: Int!
+
+  """Indicates if there is a previous page."""
+  hasPreviousPage: Boolean!
+
+  """Indicates if there is a next page."""
+  hasNextPage: Boolean!
+}
+
+"""Tokenized name information."""
+type NameModel {
+  """Name (domain)."""
+  name: ID!
+
+  """Expiration date of the name."""
+  expiresAt: DateTime!
+
+  """Date and time when the name was tokenized."""
+  tokenizedAt: DateTime!
+
+  """Whether the name is an expression of interest (EOI)."""
+  eoi: Boolean!
+
+  """Registrar associated with the name."""
+  registrar: RegistrarModel!
+
+  """List of nameservers for the name."""
+  nameservers: [NameServerModel!]!
+
+  """DNSSEC DS Keys for the name."""
+  dsKeys: [DSKeyModel!]
+
+  """Whether transfer lock is enabled for the name ownership token."""
+  transferLock: Boolean
+
+  """Wallet address that claimed the name."""
+  claimedBy: AddressCAIP10
+
+  """Tokens associated with the name."""
+  tokens: [TokenModel!]
+
+  """Activities associated with the name."""
+  activities: [NameActivity!]
+
+  """Whether the name is currently fractionalized."""
+  isFractionalized: Boolean!
+
+  """Fractional token information if the name is fractionalized."""
+  fractionalTokenInfo: [FractionalTokenInfoModel!]
+}
+
+"""Union type for different name activities."""
+union NameActivity = NameClaimedActivity | NameRenewedActivity | NameDetokenizedActivity | NameTokenizedActivity | NameClaimRequestedActivity | NameClaimApprovedActivity | NameClaimRejectedActivity
+
+"""Activity representing a name claim."""
+type NameClaimedActivity {
+  """Type of name activity."""
+  type: NameActivityType!
+
+  """Transaction hash associated with the activity."""
+  txHash: String
+
+  """Second-level domain (SLD) name."""
+  sld: String!
+
+  """Top-level domain (TLD) name."""
+  tld: String!
+
+  """Date and time when the activity was created."""
+  createdAt: DateTime!
+
+  """Wallet address that claimed the name."""
+  claimedBy: String!
+}
+
+"""Name Activity Type"""
+enum NameActivityType {
+  """Name was tokenized."""
+  TOKENIZED
+
+  """Name was claimed by a wallet address."""
+  CLAIMED
+
+  """Name was renewed."""
+  RENEWED
+
+  """Name was detokenized."""
+  DETOKENIZED
+
+  """Name claim was requested."""
+  CLAIM_REQUESTED
+
+  """Name claim was approved."""
+  CLAIM_APPROVED
+
+  """Name claim was rejected."""
+  CLAIM_REJECTED
+}
+
+"""Activity representing a name renewal."""
+type NameRenewedActivity {
+  """Type of name activity."""
+  type: NameActivityType!
+
+  """Transaction hash associated with the activity."""
+  txHash: String
+
+  """Second-level domain (SLD) name."""
+  sld: String!
+
+  """Top-level domain (TLD) name."""
+  tld: String!
+
+  """Date and time when the activity was created."""
+  createdAt: DateTime!
+
+  """Expiration date of the renewed name."""
+  expiresAt: DateTime!
+}
+
+"""Activity representing a name detokenization."""
+type NameDetokenizedActivity {
+  """Type of name activity."""
+  type: NameActivityType!
+
+  """Transaction hash associated with the activity."""
+  txHash: String
+
+  """Second-level domain (SLD) name."""
+  sld: String!
+
+  """Top-level domain (TLD) name."""
+  tld: String!
+
+  """Date and time when the activity was created."""
+  createdAt: DateTime!
+
+  """Network ID in CAIP-2 format."""
+  networkId: String!
+}
+
+"""Activity representing a name tokenization."""
+type NameTokenizedActivity {
+  """Type of name activity."""
+  type: NameActivityType!
+
+  """Transaction hash associated with the activity."""
+  txHash: String
+
+  """Second-level domain (SLD) name."""
+  sld: String!
+
+  """Top-level domain (TLD) name."""
+  tld: String!
+
+  """Date and time when the activity was created."""
+  createdAt: DateTime!
+
+  """Network ID in CAIP-2 format."""
+  networkId: String!
+}
+
+"""Activity representing a name claim request."""
+type NameClaimRequestedActivity {
+  """Type of name activity."""
+  type: NameActivityType!
+
+  """Transaction hash associated with the activity."""
+  txHash: String
+
+  """Second-level domain (SLD) name."""
+  sld: String!
+
+  """Top-level domain (TLD) name."""
+  tld: String!
+
+  """Date and time when the activity was created."""
+  createdAt: DateTime!
+}
+
+"""Activity representing a name claim approval."""
+type NameClaimApprovedActivity {
+  """Type of name activity."""
+  type: NameActivityType!
+
+  """Transaction hash associated with the activity."""
+  txHash: String
+
+  """Second-level domain (SLD) name."""
+  sld: String!
+
+  """Top-level domain (TLD) name."""
+  tld: String!
+
+  """Date and time when the activity was created."""
+  createdAt: DateTime!
+}
+
+"""Activity representing a name claim rejection."""
+type NameClaimRejectedActivity {
+  """Type of name activity."""
+  type: NameActivityType!
+
+  """Transaction hash associated with the activity."""
+  txHash: String
+
+  """Second-level domain (SLD) name."""
+  sld: String!
+
+  """Top-level domain (TLD) name."""
+  tld: String!
+
+  """Date and time when the activity was created."""
+  createdAt: DateTime!
+}
+
+"""
+Secondary sale listing for a tokenized name, including name and registrar info.
+"""
+type NameListingModel {
+  """Listing ID."""
+  id: ID!
+
+  """External order ID."""
+  externalId: String!
+
+  """Listing price."""
+  price: BigInt!
+
+  """Offerer address in CAIP-10 format."""
+  offererAddress: AddressCAIP10!
+
+  """Orderbook type."""
+  orderbook: OrderbookType!
+
+  """Currency used for the listing."""
+  currency: CurrencyModel!
+
+  """Expiration date of the listing."""
+  expiresAt: DateTime!
+
+  """Date and time when the listing was created."""
+  createdAt: DateTime!
+
+  """Date and time when the listing was last updated."""
+  updatedAt: DateTime!
+
+  """Name (domain) associated with the listing."""
+  name: String!
+
+  """Expiration date of the name."""
+  nameExpiresAt: DateTime!
+
+  """Registrar associated with the name."""
+  registrar: RegistrarModel!
+
+  """Token ID associated with the listing."""
+  tokenId: String!
+
+  """Token contract address."""
+  tokenAddress: String!
+
+  """Blockchain network information."""
+  chain: ChainModel!
+}
+
+"""Offer for a tokenized name, including name and registrar info."""
+type NameOfferModel {
+  """Offer ID."""
+  id: ID!
+
+  """External offer ID."""
+  externalId: String!
+
+  """Offer price."""
+  price: BigInt!
+
+  """Offerer address in CAIP-10 format."""
+  offererAddress: AddressCAIP10!
+
+  """Orderbook type."""
+  orderbook: OrderbookType!
+
+  """Currency used for the offer."""
+  currency: CurrencyModel!
+
+  """Expiration date of the offer."""
+  expiresAt: DateTime!
+
+  """Date and time when the offer was created."""
+  createdAt: DateTime!
+
+  """Name (domain) associated with the offer."""
+  name: String!
+
+  """Expiration date of the name."""
+  nameExpiresAt: DateTime!
+
+  """Registrar associated with the name."""
+  registrar: RegistrarModel!
+
+  """Token ID associated with the offer."""
+  tokenId: String!
+
+  """Token contract address."""
+  tokenAddress: String!
+
+  """Blockchain network information."""
+  chain: ChainModel!
+}
+
+"""Statistics for a specific tokenized name."""
+type NameStatisticsModel {
+  """Name (domain)."""
+  name: String!
+
+  """Highest offer for the name."""
+  highestOffer: OfferModel
+
+  """Number of active offers for the name."""
+  activeOffers: Int!
+
+  """Number of offers received in the last 3 days."""
+  offersLast3Days: Int!
+}
+
+"""Proof of contacts voucher for registrant contact verification."""
+type ProofOfContactsVoucherModel {
+  """Registrant handle."""
+  registrantHandle: String!
+
+  """Nonce for the voucher."""
+  nonce: String!
+
+  """Registrar Public key that was used for contact information encryption."""
+  publicKey: String!
+
+  """Proof source type."""
+  proofSource: Int!
+
+  """Expiration timestamp for the voucher."""
+  expiresAt: Float!
+}
+
+"""Response containing proof of contacts voucher and its signature."""
+type ProofOfContactsVoucherResponseModel {
+  """Proof of contacts voucher."""
+  proofOfContactsVoucher: ProofOfContactsVoucherModel!
+
+  """Signature for the voucher."""
+  signature: String!
+}
+
+"""
+Paginated response for querying tokenized names. Contains a list of NameModel items and pagination metadata.
+"""
+type PaginatedNamesResponse {
+  """List of items for the current page."""
+  items: [NameModel!]!
+
+  """Total number of items matching the query."""
+  totalCount: Int!
+
+  """Number of items per page."""
+  pageSize: Int!
+
+  """Current page number (1-based)."""
+  currentPage: Int!
+
+  """Total number of pages available."""
+  totalPages: Int!
+
+  """Indicates if there is a previous page."""
+  hasPreviousPage: Boolean!
+
+  """Indicates if there is a next page."""
+  hasNextPage: Boolean!
+}
+
+"""
+Paginated response for querying tokenized name ownership tokens. Contains a list of TokenModel items and pagination metadata.
+"""
+type PaginatedTokensResponse {
+  """List of items for the current page."""
+  items: [TokenModel!]!
+
+  """Total number of items matching the query."""
+  totalCount: Int!
+
+  """Number of items per page."""
+  pageSize: Int!
+
+  """Current page number (1-based)."""
+  currentPage: Int!
+
+  """Total number of pages available."""
+  totalPages: Int!
+
+  """Indicates if there is a previous page."""
+  hasPreviousPage: Boolean!
+
+  """Indicates if there is a next page."""
+  hasNextPage: Boolean!
+}
+
+"""
+Paginated response for querying token activities. Contains a list of TokenActivity items and pagination metadata.
+"""
+type PaginatedTokenActivitiesResponse {
+  """List of items for the current page."""
+  items: [TokenActivity!]!
+
+  """Total number of items matching the query."""
+  totalCount: Int!
+
+  """Number of items per page."""
+  pageSize: Int!
+
+  """Current page number (1-based)."""
+  currentPage: Int!
+
+  """Total number of pages available."""
+  totalPages: Int!
+
+  """Indicates if there is a previous page."""
+  hasPreviousPage: Boolean!
+
+  """Indicates if there is a next page."""
+  hasNextPage: Boolean!
+}
+
+"""
+Paginated response for querying name activities. Contains a list of NameActivity items and pagination metadata.
+"""
+type PaginatedNameActivitiesResponse {
+  """List of items for the current page."""
+  items: [NameActivity!]!
+
+  """Total number of items matching the query."""
+  totalCount: Int!
+
+  """Number of items per page."""
+  pageSize: Int!
+
+  """Current page number (1-based)."""
+  currentPage: Int!
+
+  """Total number of pages available."""
+  totalPages: Int!
+
+  """Indicates if there is a previous page."""
+  hasPreviousPage: Boolean!
+
+  """Indicates if there is a next page."""
+  hasNextPage: Boolean!
+}
+
+"""
+Paginated response for querying offers for tokenized names. Contains a list of NameOfferModel items and pagination metadata.
+"""
+type PaginatedNameOffersResponse {
+  """List of items for the current page."""
+  items: [NameOfferModel!]!
+
+  """Total number of items matching the query."""
+  totalCount: Int!
+
+  """Number of items per page."""
+  pageSize: Int!
+
+  """Current page number (1-based)."""
+  currentPage: Int!
+
+  """Total number of pages available."""
+  totalPages: Int!
+
+  """Indicates if there is a previous page."""
+  hasPreviousPage: Boolean!
+
+  """Indicates if there is a next page."""
+  hasNextPage: Boolean!
+}
+
+"""
+Paginated response for querying listings for tokenized names. Contains a list of NameListingModel items and pagination metadata.
+"""
+type PaginatedNameListingsResponse {
+  """List of items for the current page."""
+  items: [NameListingModel!]!
+
+  """Total number of items matching the query."""
+  totalCount: Int!
+
+  """Number of items per page."""
+  pageSize: Int!
+
+  """Current page number (1-based)."""
+  currentPage: Int!
+
+  """Total number of pages available."""
+  totalPages: Int!
+
+  """Indicates if there is a previous page."""
+  hasPreviousPage: Boolean!
+
+  """Indicates if there is a next page."""
+  hasNextPage: Boolean!
+}
+
+type DailyActiveWalletsModel {
+  """Date created"""
+  date: DateTime!
+
+  """Number of active wallets on this date."""
+  walletCount: Int!
+}
+
+type DailyTransactionsModel {
+  """Date created"""
+  date: DateTime!
+
+  """Number of unique transactions on this date."""
+  transactionCount: Int!
+}
+
+type DailyTokenizedNamesCumulativeModel {
+  """Date created"""
+  date: DateTime!
+
+  """Number of successful tokenizations on this date."""
+  tokenizedCount: Int!
+}
+
+type DailyTokenizedNamesModel {
+  """Date created"""
+  date: DateTime!
+
+  """Number of names tokenized on this date."""
+  tokenizedCount: Int!
+}
+
+type DailyRevenueModel {
+  """Date created"""
+  date: DateTime!
+
+  """Total revenue generated on this date."""
+  revenueUsd: Float!
+}
+
+"""Fractionalization voucher data."""
+type FractionalizationVoucherModel {
+  """Initial valuation of the name token in quote token."""
+  initialValuation: BigInt!
+
+  """Name of the fractional token."""
+  name: String!
+
+  """Symbol of the fractional token."""
+  symbol: String!
+
+  """Number of decimal places for the fractional token."""
+  decimals: Int!
+
+  """Total supply of the fractional tokens."""
+  totalSupply: BigInt!
+
+  """Type of launchpad used for the token sale (0 - Doma Launchpad)."""
+  launchpadType: Int!
+
+  """Number of tokens allocated for the launchpad sale."""
+  launchpadSupply: BigInt!
+
+  """Launchpad fee in basis points (100 = 1%)."""
+  launchpadFeeBps: Int!
+
+  """Number of tokens allocated for the liquidity pool."""
+  poolSupply: BigInt!
+
+  """Pool creation fee in basis points (100 = 1%)"""
+  poolFeeBps: Int!
+
+  """Initial price per token at launch start."""
+  initialLaunchpadPrice: BigInt!
+
+  """Final price per token at launch end."""
+  finalLaunchpadPrice: BigInt!
+
+  """Launch start date as Unix timestamp in seconds."""
+  launchStartDate: Int!
+
+  """Launch end date as Unix timestamp in seconds."""
+  launchEndDate: Int!
+
+  """Additional encoded data for launchpad. Depends on a launchpad type."""
+  launchpadData: String!
+
+  """Vesting cliff period in seconds before tokens start vesting."""
+  vestingCliffSeconds: Int!
+
+  """Total vesting duration in seconds."""
+  vestingDurationSeconds: Int!
+
+  """Initial price for the liquidity pool after launch."""
+  initialPoolPrice: BigInt!
+
+  """URI pointing to the metadata for the fractional token."""
+  metadataURI: String!
+
+  """Token ID to sign voucher for."""
+  tokenId: String!
+}
+
+"""Response containing signed fractionalization voucher."""
+type SignedFractionalizationVoucherResponse {
+  """Fractionalization voucher data."""
+  voucher: FractionalizationVoucherModel!
+
+  """Cryptographic signature for the voucher."""
+  signature: String!
+
+  """Voucher expiration timestamp."""
+  expiresAt: Float!
+}
+
+"""Response model for launch waitlist entry."""
+type LaunchWaitlistEntryModel {
+  """Unique identifier for the waitlist entry"""
+  id: ID!
+
+  """Wallet address that was added to the waitlist"""
+  walletAddress: AddressCAIP10!
+
+  """Token ID associated with the waitlist entry"""
+  tokenId: String!
+
+  """Timestamp when the entry was created"""
+  createdAt: DateTime!
+
+  """Timestamp when the entry was last updated"""
+  updatedAt: DateTime!
+}
+
+type BuyoutPriceTimeData {
+  """Start date of the aggregation period."""
+  periodStart: DateTime!
+
+  """Buyout price in USD on the given date."""
+  price: BigInt!
+}
+
+type BuyoutPriceModel {
+  """Buyout price in quote token."""
+  price: BigInt!
+
+  """Date when the buyout price was recorded."""
+  date: DateTime!
+}
+
+type FractionalTokenStatsModel {
+  """Historical buyout prices."""
+  buyoutPrice: [BuyoutPriceModel!]!
+}
+
+type VestingWithdrawalModel {
+  """Total amount withdrawn from vesting."""
+  amount: BigInt!
+
+  """Address that made the withdrawal."""
+  to: String!
+
+  """Date when the withdrawal was made."""
+  date: DateTime!
+}
+
+type FractionalTokenVestingModel {
+  """Total vested amount."""
+  vestedAmount: BigInt!
+
+  """Total withdrawable amount."""
+  availableForWithdrawalAmount: BigInt!
+
+  """List of withdrawals made from vesting."""
+  withdrawals: [VestingWithdrawalModel!]!
+}
+
+type StatisticsModel {
+  """Total Value Locked on fractionalized domains"""
+  totalValueLockedFractionalized: String!
+
+  """Total tokenized domains on Doma"""
+  totalDomains: Float!
+  fractionalToken(address: AddressCAIP10!, timeRange: StatisticsTimeRange!): FractionalTokenStatsModel
+  fractionalTokenVesting(address: AddressCAIP10!): FractionalTokenVestingModel
+}
+
+"""Statistics Time Range"""
+enum StatisticsTimeRange {
+  LAST_1_HOUR
+  LAST_7_HOURS
+  LAST_1_DAY
+  LAST_7_DAYS
+
+  """Last 14 days."""
+  LAST_14_DAYS
+
+  """Last 30 days."""
+  LAST_30_DAYS
+
+  """All time."""
+  ALL
+}
+
+type Query {
+  """
+  Get paginated list of tokenized names, with optional filters and sorting.
+  """
+  names(
+    """Number of items to skip."""
+    skip: Int
+
+    """Number of items to return in a current page."""
+    take: Int
+
+    """Sort order for results."""
+    sortOrder: SortOrderType = DESC
+
+    """Filter by owner addresses (CAIP-10 format)."""
+    ownedBy: [AddressCAIP10!] = null
+
+    """Filter by claim status (CLAIMED, UNCLAIMED, or ALL)."""
+    claimStatus: NamesQueryClaimStatus = ALL
+
+    """Filter by name (domain)."""
+    name: String = null
+
+    """Filter by network IDs (CAIP-2 format)."""
+    networkIds: [String!] = null
+
+    """Filter by registrar IANA IDs."""
+    registrarIanaIds: [Int!] = null
+
+    """Filter by TLDs."""
+    tlds: [String!] = null
+
+    """Field to sort names by."""
+    sortBy: NamesQuerySortBy = null
+
+    """Filter by fractionalized names."""
+    fractionalized: Boolean = null
+
+    """Filter for names that have active listings."""
+    listed: Boolean = null
+
+    """Filter for names that are not expired (active domains)."""
+    active: Boolean = null
+
+    """Filter by minimum price of listings."""
+    priceRangeMin: Float = null
+
+    """Filter by maximum price of listings."""
+    priceRangeMax: Float = null
+
+    """Filter based on currency conversion of listings."""
+    priceRangeCurrency: String = null
+  ): PaginatedNamesResponse!
+
+  """Get information about a specific tokenized name."""
+  name(
+    """Name to fetch information."""
+    name: String!
+  ): NameModel!
+
+  """Get paginated list of tokens, with optional filters and sorting."""
+  tokens(
+    """Number of items to skip."""
+    skip: Int
+
+    """Number of items to return in a current page."""
+    take: Int
+
+    """Name (domain) to query tokens for."""
+    name: String!
+  ): PaginatedTokensResponse!
+
+  """Get information about a specific token by its ID."""
+  token(
+    """Token id to fetch information."""
+    tokenId: String!
+  ): TokenModel!
+
+  """Get all fractional tokens with optional filtering."""
+  fractionalTokens(
+    """Number of items to skip."""
+    skip: Int
+
+    """Number of items to return in a current page."""
+    take: Int
+
+    """Sort order for results."""
+    sortOrder: SortOrderType
+
+    """Filter by domain name."""
+    name: String
+
+    """Filter by wallet addresses (CAIP-10 format)."""
+    walletAddresses: [AddressCAIP10!]
+
+    """Filter by fractional token status."""
+    status: FractionalTokenStatus
+
+    """Filter by network IDs in CAIP-2 format."""
+    networkIds: [String!]
+  ): PaginatedFractionalTokenInfoResponse!
+
+  """Return balances of fractional tokens on specific wallets."""
+  fractionalTokenBalances(
+    """Number of items to skip."""
+    skip: Int
+
+    """Number of items to return in a current page."""
+    take: Int
+
+    """Fractional token id."""
+    fractionalTokenId: Int
+
+    """Wallet addresses (chain-native format)."""
+    addresses: [AddressCAIP10!]
+  ): PaginatedWalletBalanceResponse!
+
+  """
+  Get information about a specific command by its correlation ID. Useful to track status of client-initiated operations (e.g. bridging a name).
+  """
+  command(
+    """Command correlation (relay) id to fetch information."""
+    correlationId: String!
+  ): CommandModel!
+
+  """Get paginated list of activities related to a specific name."""
+  nameActivities(
+    """Number of items to skip."""
+    skip: Int
+
+    """Number of items to return in a current page."""
+    take: Int
+
+    """Sort order for results."""
+    sortOrder: SortOrderType = DESC
+
+    """Name (domain) to query activities for."""
+    name: String!
+
+    """Filter by activity type."""
+    type: NameActivityType = null
+  ): PaginatedNameActivitiesResponse!
+
+  """Get paginated list of activities related to a specific token."""
+  tokenActivities(
+    """Number of items to skip."""
+    skip: Int
+
+    """Number of items to return in a current page."""
+    take: Int
+
+    """Sort order for results."""
+    sortOrder: SortOrderType = DESC
+
+    """Token ID to query activities for."""
+    tokenId: String!
+
+    """Filter by activity type."""
+    type: TokenActivityType = null
+  ): PaginatedTokenActivitiesResponse!
+
+  """
+  Get paginated list of "Buy Now" secondary sale listings for tokenized names, with optional filters.
+  """
+  listings(
+    """Number of items to skip."""
+    skip: Int
+
+    """Number of items to return in a current page."""
+    take: Int
+
+    """Filter by TLDs."""
+    tlds: [String!] = null
+
+    """Filter listings created since this date."""
+    createdSince: DateTime = null
+
+    """Second-level domain (SLD) name."""
+    sld: String = null
+
+    """Filter by network IDs (CAIP-2 format)."""
+    networkIds: [String!] = null
+
+    """Filter by registrar IANA IDs."""
+    registrarIanaIds: [Int!] = null
+  ): PaginatedNameListingsResponse!
+
+  """
+  Get paginated list of offers for tokenized names, with optional filters.
+  """
+  offers(
+    """Number of items to skip."""
+    skip: Int
+
+    """Number of items to return in a current page."""
+    take: Int
+
+    """Sort order for results."""
+    sortOrder: SortOrderType = DESC
+
+    """Token ID to query offers for."""
+    tokenId: String = null
+
+    """Filter by offerer addresses (CAIP-10 format)."""
+    offeredBy: [AddressCAIP10!]
+
+    """Filter by offer status (ACTIVE, EXPIRED, All)."""
+    status: OfferStatus = null
+  ): PaginatedNameOffersResponse!
+
+  """Get statistics for a specific tokenized name."""
+  nameStatistics(
+    """
+    Name Ownership Token ID that identifies a name to retrieve statistics from.
+    """
+    tokenId: String!
+  ): NameStatisticsModel!
+
+  """Get statistics for the current chain."""
+  chainStatistics: ChainStatisticsModel!
+
+  """Get daily active wallets statistics for the last 30 days."""
+  dailyActiveWallets(
+    """Time range for the statistics."""
+    timeRange: StatisticsTimeRange!
+  ): [DailyActiveWalletsModel!]!
+
+  """Get daily transaction statistics showing unique transactions per day."""
+  dailyTransactionCount(
+    """Time range for the statistics."""
+    timeRange: StatisticsTimeRange!
+  ): [DailyTransactionsModel!]!
+
+  """Get daily tokenization statistics for the last 30 days."""
+  dailyCumulativeTokenizationCount(
+    """Time range for the statistics."""
+    timeRange: StatisticsTimeRange!
+  ): [DailyTokenizedNamesCumulativeModel!]!
+
+  """Get daily tokenized names statistics for the last 30 days."""
+  dailyTokenizationCount(
+    """Time range for the statistics."""
+    timeRange: StatisticsTimeRange!
+  ): [DailyTokenizedNamesModel!]!
+
+  """Get daily revenue statistics for the last 30 days."""
+  dailyRevenue(
+    """Time range for the statistics."""
+    timeRange: StatisticsTimeRange!
+  ): [DailyRevenueModel!]!
+
+  """Get daily buyout price data for a specific fractionalized name."""
+  fractionalizationBuyoutPriceTimeData(
+    """Number of items to skip."""
+    skip: Int
+
+    """Number of items to return in a current page."""
+    take: Int
+
+    """Fractional token address (CAIP-10 format)."""
+    address: AddressCAIP10!
+
+    """Starting date for the aggregation period."""
+    startingDate: DateTime!
+
+    """Aggregation period (DAY or HOUR)."""
+    interval: AggregatePeriod!
+  ): [BuyoutPriceTimeData!]!
+  statistics: StatisticsModel!
+}
+
+"""Sort Order Type"""
+enum SortOrderType {
+  """Descending order."""
+  DESC
+
+  """Ascending order."""
+  ASC
+}
+
+"""Names Claim Status"""
+enum NamesQueryClaimStatus {
+  """Name has been claimed."""
+  CLAIMED
+
+  """Name has not been claimed."""
+  UNCLAIMED
+
+  """All names, regardless of claim status."""
+  ALL
+}
+
+"""Field by which to sort names."""
+enum NamesQuerySortBy {
+  """Sort by domain name."""
+  DOMAIN
+
+  """Sort by blockchain network."""
+  CHAIN
+
+  """Sort by registrar."""
+  REGISTRAR
+  EXPIRES_AT
+
+  """Sort by the minimum dollar value of listings."""
+  VALUE
+}
+
+"""Offer Status Filter"""
+enum OfferStatus {
+  """Offer is currently active."""
+  ACTIVE
+
+  """Offer has expired."""
+  EXPIRED
+
+  """All offers, regardless of status."""
+  All
+}
+
+"""Time period for aggregating buyout price data (DAY or HOUR)."""
+enum AggregatePeriod {
+  DAY
+  HOUR
+}
+
+type Mutation {
+  """
+  Generate metadata for a list of tokens based on their attributes. Useful to pre-create metadata before generating synthetic tokens.
+  """
+  generateMetadata(
+    """List of synthetic tokens to generate metadata for."""
+    tokens: [TokenMetadataGenerationRequestInput!]!
+  ): [String!]!
+
+  """
+  Initiate email verification process for a given email address. Used to verify contact information before claiming a tokenized name.
+  """
+  initiateEmailVerification(
+    """Email address to initiate email verification."""
+    email: String!
+  ): Boolean!
+
+  """
+  Complete email verification process by providing the verification code sent to the email address. Returns a proof of email verification that can be used to upload registrant contacts.
+  """
+  completeEmailVerification(
+    """Email verification code."""
+    code: String!
+
+    """Email that was used to initiate verification."""
+    email: String!
+  ): String!
+
+  """
+  Upload registrant contact information along with proof of email verification. This is used to claim a tokenized name and associate it with the provided contact details.
+  """
+  uploadRegistrantContacts(
+    """Registrant contact information."""
+    contact: RegistrantContactInput!
+
+    """
+    Proof of email verification, obtained after completing the email verification process.
+    """
+    emailVerificationProof: String!
+
+    """Network ID (CAIP-2 format) where the name is being claimed."""
+    networkId: String!
+
+    """IANA ID of the registrar where the name is being claimed."""
+    registrarIanaId: Int!
+  ): ProofOfContactsVoucherResponseModel!
+
+  """
+  Upload verified registrant contact information without email verification proof. This is used to claim a tokenized name with pre-verified email. Requires additional VERIFIED_CONTACTS_UPLOAD permission to use.
+  """
+  uploadVerifiedRegistrantContacts(
+    """
+    Registrant contact information, including name, email, address, and phone.
+    """
+    contact: RegistrantContactInput!
+
+    """Network ID (CAIP-2 format) where the name is being claimed."""
+    networkId: String!
+
+    """IANA ID of the registrar where the name is being claimed."""
+    registrarIanaId: Int!
+  ): ProofOfContactsVoucherResponseModel!
+
+  """
+  Generate a signed fractionalization voucher for a name token. This voucher can be used to initiate the fractionalization process on the blockchain.
+  """
+  signFractionalizationVoucher(
+    """Token ID to sign voucher for."""
+    tokenId: String!
+
+    """Initial valuation of the name token."""
+    initialValuation: String!
+
+    """Name of the fractional token."""
+    name: String!
+
+    """Symbol of the fractional token."""
+    symbol: String!
+
+    """Number of decimal places."""
+    decimals: Int!
+
+    """Total supply of tokens."""
+    totalSupply: String!
+
+    """Type of launchpad."""
+    launchpadType: Int!
+
+    """Supply allocated to launchpad."""
+    launchpadSupply: String!
+
+    """Launchpad fee in basis points."""
+    launchpadFeeBps: Int!
+
+    """Supply allocated to liquidity pool."""
+    poolSupply: String!
+
+    """Pool fee in basis points."""
+    poolFeeBps: Int!
+
+    """Initial price per token in launchpad."""
+    initialLaunchpadPrice: String!
+
+    """Final price per token in launchpad."""
+    finalLaunchpadPrice: String!
+
+    """Launch start date as Unix timestamp."""
+    launchStartDate: String!
+
+    """Launch end date as Unix timestamp."""
+    launchEndDate: String!
+
+    """Additional launchpad data."""
+    launchpadData: String!
+
+    """Vesting cliff period in seconds."""
+    vestingCliffSeconds: Int!
+
+    """Total vesting duration in seconds."""
+    vestingDurationSeconds: Int!
+
+    """Initial price for liquidity pool."""
+    initialPoolPrice: String!
+
+    """URI pointing to the metadata for the fractional token."""
+    metadataURI: String!
+
+    """Network ID (CAIP-2 format) where the fractionalization will occur."""
+    networkId: String!
+
+    """Expiration date for the voucher."""
+    expiresAt: DateTime!
+  ): SignedFractionalizationVoucherResponse!
+
+  """Add a wallet address to the launch waitlist for a specific name token."""
+  launchWaitlistApply(
+    """Wallet address to add to the waitlist"""
+    walletAddress: AddressCAIP10!
+
+    """Name token ID for the waitlist"""
+    tokenId: String!
+  ): LaunchWaitlistEntryModel!
+}
+
+"""
+Input for generating token metadata, including name, network, type, and validity period.
+"""
+input TokenMetadataGenerationRequestInput {
+  """Name (domain) for which to generate metadata."""
+  name: String!
+
+  """Network ID in CAIP-2 format."""
+  networkId: String!
+
+  """Type of token to generate metadata for."""
+  type: TokenType!
+
+  """Optional start date for the token validity period."""
+  startsAt: DateTime = null
+
+  """Expiration date for the token."""
+  expiresAt: DateTime!
+}
+
+"""Registrant contact information for domain registration."""
+input RegistrantContactInput {
+  """Full name of the registrant."""
+  name: String!
+
+  """Organization name of the registrant (optional)."""
+  organization: String = null
+
+  """Email address of the registrant."""
+  email: String!
+
+  """Phone number of the registrant."""
+  phone: String!
+
+  """Fax number of the registrant (optional)."""
+  fax: String = null
+
+  """Street address of the registrant."""
+  street: String!
+
+  """City of the registrant."""
+  city: String!
+
+  """State or province of the registrant."""
+  state: String!
+
+  """Postal code of the registrant."""
+  postalCode: String!
+
+  """Country code of the registrant (ISO 3166-1 alpha-2)."""
+  countryCode: String!
+}

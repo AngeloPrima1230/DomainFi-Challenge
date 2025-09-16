@@ -2,14 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useDomaSubgraph } from './hooks/useDomaSubgraph';
+import type { TokenizedName } from './hooks/useDomaSubgraph';
 import { useDomaMarketplace } from './hooks/useDomaMarketplace';
 import AuctionCard from './components/AuctionCard';
 import CreateAuctionModal from './components/CreateAuctionModal';
 import DomainDetailsModal from './components/DomainDetailsModal';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
-import MarketplaceTab from './components/MarketplaceTab';
-import CreateListingModal from './components/CreateListingModal';
-import PlaceOfferModal from './components/PlaceOfferModal';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
 import { sepolia } from 'wagmi/chains';
@@ -44,13 +42,9 @@ export default function Home() {
     namesTotalCount,
     fetchNameCount,
     fetchTokenizedNames,
-    fetchListings
+    fetchListings,
+    getNamesByOwner
   } = useDomaSubgraph();
-  const { 
-    listings: marketplaceListings, 
-    createListing, 
-    placeOffer 
-  } = useDomaMarketplace();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedDomain, setSelectedDomain] = useState<any>(null);
@@ -63,12 +57,12 @@ export default function Home() {
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
-  const [showMarketplace, setShowMarketplace] = useState(true);
+  const [showOwnedDomains, setShowOwnedDomains] = useState(false);
   const [allListings, setAllListings] = useState<any[]>([]);
 
   const hoursFetching = 1;
   const timeFetching = 1000 * 60 * 60 * hoursFetching; // 1 hour
-  const pageSize = 15;
+  const pageSize = 1000;
   
   // Advanced filters state
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
@@ -83,6 +77,51 @@ export default function Home() {
   });
 
   const { address, isConnected } = useAccount();
+  const [ownedDomains, setOwnedDomains] = useState<TokenizedName[]>([]);
+
+  // Fetch owned domains directly from subgraph using ownedBy filter (CAIP-10)
+  useEffect(() => {
+    const run = async () => {
+      if (isConnected && address) {
+        const caip10 = `eip155:97476:${address.toLowerCase()}`;
+        const items = await getNamesByOwner(caip10);
+        setOwnedDomains(items);
+      } else {
+        setOwnedDomains([]);
+      }
+    };
+    run();
+  }, [isConnected, address, getNamesByOwner]);
+
+  // Debug logging
+  useEffect(() => {
+    if (isConnected && address) {
+      console.log('Connected wallet address:', address);
+      console.log('Total names loaded:', names.length);
+      console.log('Names with tokens:', names.filter(n => n.tokens?.length > 0).length);
+      console.log('Owned domains found:', ownedDomains.length);
+      
+      // Log first few names with tokens for debugging
+      const namesWithTokens = names.filter(n => n.tokens?.length > 0).slice(0, 5);
+      namesWithTokens.forEach(name => {
+        console.log(`Domain: ${name.name}`, {
+          tokens: name.tokens?.map(t => {
+            const tokenOwner = t.ownerAddress?.toLowerCase();
+            const cleanTokenOwner = tokenOwner?.includes(':') 
+              ? tokenOwner.split(':').pop() 
+              : tokenOwner;
+            return {
+              tokenId: t.tokenId,
+              ownerAddress: t.ownerAddress,
+              cleanOwnerAddress: cleanTokenOwner,
+              walletAddress: address?.toLowerCase(),
+              matchesWallet: cleanTokenOwner === address?.toLowerCase()
+            };
+          })
+        });
+      });
+    }
+  }, [isConnected, address, names, ownedDomains]);
 
   // USD pricing
   const { getUsdRate } = useTokenPrices();
@@ -126,9 +165,9 @@ export default function Home() {
 
   // Combine data from both sources
   useEffect(() => {
-    setAllListings([...listings, ...marketplaceListings]);
-    console.log(listings, marketplaceListings)
-  }, [listings, marketplaceListings]);
+    setAllListings([...listings]);
+    console.log('Listings:', listings.length)
+  }, [listings]);
 
   
   // Create searchable items from both tokenized names and listings
@@ -542,9 +581,26 @@ export default function Home() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Doma Protocol</h1>
-                <p className="text-sm text-gray-300">Marketplace</p>
+                <p className="text-sm text-gray-300">Domain Marketplace</p>
               </div>
             </div>
+            
+            {/* Navigation */}
+            <nav className="hidden md:flex items-center space-x-6">
+              <a 
+                href="/" 
+                className="text-white hover:text-blue-400 transition-colors font-medium"
+              >
+                Home
+              </a>
+              <a 
+                href="/marketplace" 
+                className="text-white hover:text-blue-400 transition-colors font-medium"
+              >
+                Marketplace
+              </a>
+            </nav>
+            
             <ConnectButton />
           </div>
         </div>
@@ -916,16 +972,24 @@ export default function Home() {
             >
               {showAnalytics ? 'Hide Analytics' : 'View Analytics'}
             </button>
-            <button
-              onClick={() => setShowMarketplace(!showMarketplace)}
-              className={`px-8 py-3 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg ${
-                showMarketplace
-                  ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white'
-                  : 'bg-white/10 backdrop-blur-sm border border-white/20 text-gray-300 hover:bg-white/20 hover:border-white/30'
-              }`}
+            {isConnected && (
+              <button
+                onClick={() => setShowOwnedDomains(!showOwnedDomains)}
+                className={`px-8 py-3 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg ${
+                  showOwnedDomains
+                    ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white'
+                    : 'bg-white/10 backdrop-blur-sm border border-white/20 text-gray-300 hover:bg-white/20 hover:border-white/30'
+                }`}
+              >
+                {showOwnedDomains ? 'Hide My Domains' : `My Domains (${ownedDomains.length})`}
+              </button>
+            )}
+            <a
+              href="/marketplace"
+              className="px-8 py-3 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white hover:from-purple-600 hover:to-indigo-700"
             >
-              {showMarketplace ? 'Hide Marketplace' : 'View Marketplace'}
-            </button>
+              View Marketplace
+            </a>
           </div>
         </div>
       </section>
@@ -943,16 +1007,98 @@ export default function Home() {
         </section>
       )}
 
-      {/* Marketplace Tab */}
-      {showMarketplace && (
+      {/* Owned Domains Section */}
+      {showOwnedDomains && (
         <section className="px-4 sm:px-6 lg:px-8 py-8">
           <div className="max-w-7xl mx-auto">
-            <MarketplaceTab 
-              className="bg-white/5 backdrop-blur-sm rounded-lg p-8 border border-white/10"
-            />
+            <div className="bg-white/5 backdrop-blur-sm rounded-lg p-8 border border-white/10">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-white">My Tokenized Domains</h2>
+                <span className="text-sm text-gray-300">
+                  {ownedDomains.length} domain{ownedDomains.length !== 1 ? 's' : ''} owned
+                </span>
+              </div>
+              
+              {ownedDomains.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-gray-400 mb-4">
+                    <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-300 mb-2">No domains owned</h3>
+                  <p className="text-gray-400 mb-4">
+                    You don't own any tokenized domains yet. Connect a wallet that owns domains or purchase some from the marketplace.
+                  </p>
+                  <a
+                    href="/marketplace"
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                  >
+                    Browse Marketplace
+                  </a>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {ownedDomains.map((domain, index) => (
+                    <div
+                      key={`${domain.name}-${index}`}
+                      className="bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20 hover:border-white/30 transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-white truncate">
+                          {domain.name}
+                        </h3>
+                        <span className="text-xs text-gray-400 bg-gray-700/50 px-2 py-1 rounded">
+                          {domain.tokens?.length || 0} token{(domain.tokens?.length || 0) !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Registrar:</span>
+                          <span className="text-white">{domain.registrar?.name || 'Unknown'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Expires:</span>
+                          <span className="text-white">
+                            {domain.expiresAt ? new Date(domain.expiresAt).toLocaleDateString() : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Tokenized:</span>
+                          <span className="text-white">
+                            {domain.tokenizedAt ? new Date(domain.tokenizedAt).toLocaleDateString() : 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-4 pt-4 border-t border-white/20">
+                        <div className="text-xs text-gray-400 mb-2">Owned Tokens:</div>
+                        <div className="space-y-1">
+                          {domain.tokens?.slice(0, 3).map((token, tokenIndex) => (
+                            <div key={tokenIndex} className="flex justify-between text-xs">
+                              <span className="text-gray-300">Token #{token.tokenId.slice(-8)}</span>
+                              <span className="text-gray-400">
+                                {token.ownerAddress?.slice(0, 6)}...{token.ownerAddress?.slice(-4)}
+                              </span>
+                            </div>
+                          ))}
+                          {domain.tokens && domain.tokens.length > 3 && (
+                            <div className="text-xs text-gray-400">
+                              +{domain.tokens.length - 3} more token{domain.tokens.length - 3 !== 1 ? 's' : ''}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </section>
       )}
+
 
       {/* Listings Section */}
       <section className="px-4 sm:px-6 lg:px-8 pb-16">
@@ -1014,17 +1160,6 @@ export default function Home() {
         getCommandStatus={getCommandStatus}
       />
 
-      {/* Marketplace Modals */}
-      <CreateListingModal 
-        isOpen={false} 
-        onClose={() => {}} 
-        onSubmit={createListing}
-      />
-      <PlaceOfferModal 
-        isOpen={false} 
-        onClose={() => {}} 
-        onSubmit={placeOffer}
-      />
     </div>
   );
 }

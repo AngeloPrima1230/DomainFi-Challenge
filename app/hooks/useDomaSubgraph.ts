@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { ApolloClient, InMemoryCache, gql, createHttpLink, from } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 
+console.log('📁 useDomaSubgraph.ts file loaded');
+
 // GraphQL query for tokenized names using Doma Protocol
 const GET_TOKENIZED_NAMES = gql`
   query GetTokenizedNames($skip: Int = 0, $take: Int = 100, $name: String) {
-    names(skip: $skip, take: $take, sortOrder: DESC, name: $name) {
+    names(skip: $skip, take: $take, sortOrder: DESC) {
       items {
         name
         expiresAt
@@ -274,12 +276,12 @@ const GET_NAMES_COUNT = gql`
 
 // Create Apollo Client for Doma Protocol with API key authentication
 const httpLink = createHttpLink({
-  uri: process.env.DOMA_SUBGRAPH_URL || 'https://api-testnet.doma.xyz/graphql',
+  uri: process.env.NEXT_PUBLIC_DOMA_SUBGRAPH_URL || 'https://api-testnet.doma.xyz/graphql',
 });
 
 // Add authentication headers - Use the correct API-Key header
 const authLink = setContext((_, { headers }) => {
-  const apiKey = process.env.DOMA_API_KEY || process.env.DOMA_API_KEY;
+  const apiKey = process.env.NEXT_PUBLIC_DOMA_API_KEY || 'v1.8f6347c32950c1bfaedc4b29676fcaa14a6586ed8586338b24fdfc6c69df8b02';
   return {
     headers: {
       ...headers,
@@ -292,6 +294,14 @@ const authLink = setContext((_, { headers }) => {
 const client = new ApolloClient({
   link: from([authLink, httpLink]),
   cache: new InMemoryCache(),
+  defaultOptions: {
+    watchQuery: {
+      errorPolicy: 'all',
+    },
+    query: {
+      errorPolicy: 'all',
+    },
+  },
 });
 
 export interface TokenizedName {
@@ -379,6 +389,8 @@ export interface CommandStatus {
 }
 
 export function useDomaSubgraph() {
+  console.log('🚀 useDomaSubgraph hook initialized');
+  
   const [names, setNames] = useState<TokenizedName[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -386,10 +398,11 @@ export function useDomaSubgraph() {
   const [namesTotalCount, setNamesTotalCount] = useState(0);
 
   useEffect(() => {
-    // fetchNameCount();
-    
-    // fetchTokenizedNames();
-    // fetchListings();
+    console.log('🔄 useEffect triggered - loading initial data');
+    // Load initial data
+    fetchNameCount();
+    fetchTokenizedNames('', 0, 1000); // Load first 1000 names without search term
+    fetchListings('', 0, 100); // Load first 100 listings without search term
   }, []);
 
   const fetchTokenizedNames = async (name?: string, skip = 0, take = 15, append = false) => {
@@ -397,15 +410,20 @@ export function useDomaSubgraph() {
       setLoading(true);
       setError(null);
       
-      console.log('Fetching tokenized names with API key:', process.env.DOMA_API_KEY ? 'Present' : 'Missing');
+      console.log('Fetching tokenized names with API key:', process.env.NEXT_PUBLIC_DOMA_API_KEY ? 'Present' : 'Missing');
+      console.log('GraphQL URL:', process.env.NEXT_PUBLIC_DOMA_SUBGRAPH_URL || 'https://api-testnet.doma.xyz/graphql');
       
       const { data } = await client.query({
         query: GET_TOKENIZED_NAMES,
-        variables: { skip: Number(skip), take: Number(take), name: name || null },
+        variables: { skip: Number(skip), take: Number(take) },
         fetchPolicy: 'network-only',
       });
 
       const newItems = data?.names?.items || [];
+      
+      console.log('GraphQL response:', data);
+      console.log('New items count:', newItems.length);
+      console.log('Total count:', data?.names?.totalCount);
 
       setNames(prev => append ? [...prev, ...newItems] : newItems);
 
