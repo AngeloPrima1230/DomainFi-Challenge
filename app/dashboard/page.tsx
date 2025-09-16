@@ -66,73 +66,73 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
 
-      <main className="max-w-6xl mx-auto px-3 sm:px-4 py-4">
+      <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6">
         {/* Compact Dashboard Header */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-3">
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-xl font-bold text-white mb-1">My Dashboard</h1>
-              <p className="text-gray-400 text-xs">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent mb-2">My TAGHAUS Dashboard</h1>
+              <p className="text-purple-300/70 text-sm">
                 {address?.slice(0, 6)}...{address?.slice(-4)} • 
                 <span className="ml-1">{ownedDomains.length} domain{ownedDomains.length !== 1 ? 's' : ''}</span>
               </p>
             </div>
             <button
               onClick={() => setIsCreateAuctionOpen(true)}
-              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-lg"
+              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
             >
               Create Auction
             </button>
           </div>
 
           {/* Compact Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
-            <div className="bg-white/10 backdrop-blur-md rounded-md p-3 border border-white/20">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-gradient-to-br from-slate-800/40 to-purple-900/40 backdrop-blur-md rounded-lg p-4 border border-purple-500/20 shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-xs">Domains</p>
-                  <p className="text-lg font-bold text-white">{ownedDomains.length}</p>
+                  <p className="text-purple-300/70 text-sm">Domains</p>
+                  <p className="text-xl font-bold text-white">{ownedDomains.length}</p>
                 </div>
-                <div className="w-8 h-8 bg-blue-500/20 rounded-md flex items-center justify-center">
-                  <span className="text-blue-400 text-sm">🌐</span>
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-lg flex items-center justify-center">
+                  <span className="text-blue-400 text-lg">🌐</span>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white/10 backdrop-blur-md rounded-md p-3 border border-white/20">
+            <div className="bg-gradient-to-br from-slate-800/40 to-purple-900/40 backdrop-blur-md rounded-lg p-4 border border-purple-500/20 shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-xs">Tokens</p>
-                  <p className="text-lg font-bold text-white">
+                  <p className="text-purple-300/70 text-sm">Tokens</p>
+                  <p className="text-xl font-bold text-white">
                     {ownedDomains.reduce((sum, domain) => sum + (domain.tokens?.length || 0), 0)}
                   </p>
                 </div>
-                <div className="w-8 h-8 bg-purple-500/20 rounded-md flex items-center justify-center">
-                  <span className="text-purple-400 text-sm">🪙</span>
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center">
+                  <span className="text-purple-400 text-lg">🪙</span>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white/10 backdrop-blur-md rounded-md p-3 border border-white/20">
+            <div className="bg-gradient-to-br from-slate-800/40 to-purple-900/40 backdrop-blur-md rounded-lg p-4 border border-purple-500/20 shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-xs">Listed</p>
-                  <p className="text-lg font-bold text-white">0</p>
+                  <p className="text-purple-300/70 text-sm">Listed</p>
+                  <p className="text-xl font-bold text-white">0</p>
                 </div>
-                <div className="w-8 h-8 bg-green-500/20 rounded-md flex items-center justify-center">
-                  <span className="text-green-400 text-sm">💰</span>
+                <div className="w-10 h-10 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-lg flex items-center justify-center">
+                  <span className="text-green-400 text-lg">💰</span>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white/10 backdrop-blur-md rounded-md p-3 border border-white/20">
+            <div className="bg-gradient-to-br from-slate-800/40 to-purple-900/40 backdrop-blur-md rounded-lg p-4 border border-purple-500/20 shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-xs">Value</p>
-                  <p className="text-lg font-bold text-white">-</p>
+                  <p className="text-purple-300/70 text-sm">Value</p>
+                  <p className="text-xl font-bold text-white">-</p>
                 </div>
-                <div className="w-8 h-8 bg-yellow-500/20 rounded-md flex items-center justify-center">
-                  <span className="text-yellow-400 text-sm">💎</span>
+                <div className="w-10 h-10 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-lg flex items-center justify-center">
+                  <span className="text-yellow-400 text-lg">💎</span>
                 </div>
               </div>
             </div>
@@ -140,76 +140,76 @@ export default function DashboardPage() {
         </div>
 
         {/* Compact Owned Domains Section */}
-        <div className="bg-white/5 backdrop-blur-md rounded-lg border border-white/10">
-          <div className="p-3 border-b border-white/10">
-            <h2 className="text-lg font-bold text-white">My Tokenized Domains</h2>
+        <div className="bg-gradient-to-br from-slate-800/20 via-purple-900/20 to-slate-800/20 backdrop-blur-xl rounded-xl border border-purple-500/20 shadow-2xl">
+          <div className="p-4 border-b border-purple-500/20">
+            <h2 className="text-xl font-bold text-white">My Tokenized Domains</h2>
           </div>
           
-          <div className="p-3">
+          <div className="p-6">
             {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400"></div>
-                <span className="ml-2 text-gray-400 text-sm">Loading your domains...</span>
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400"></div>
+                <span className="ml-3 text-purple-300/70 text-sm">Loading your domains...</span>
               </div>
             ) : ownedDomains.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="text-gray-400 mb-2">
-                  <svg className="mx-auto h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="text-center py-12">
+                <div className="text-purple-400 mb-4">
+                  <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
                 </div>
-                <h3 className="text-base font-medium text-gray-300 mb-1">No domains found</h3>
-                <p className="text-gray-400 text-sm mb-4">
+                <h3 className="text-lg font-semibold text-white mb-2">No domains found</h3>
+                <p className="text-purple-300/70 text-sm mb-6">
                   You don't own any tokenized domains yet.
                 </p>
                 <button
                   onClick={() => router.push('/')}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors"
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-200 shadow-lg"
                 >
                   Search Domains
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {ownedDomains.map((domain, index) => (
                   <div
                     key={`${domain.name}-${index}`}
-                    className="bg-white/10 backdrop-blur-md rounded-md p-3 border border-white/20 hover:border-white/30 transition-all hover:scale-105 cursor-pointer"
+                    className="bg-gradient-to-br from-slate-800/40 to-purple-900/40 backdrop-blur-md rounded-lg p-4 border border-purple-500/20 hover:border-purple-400/40 transition-all hover:scale-105 cursor-pointer shadow-lg"
                     onClick={() => openDomainDetails(domain)}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-sm font-semibold text-white truncate">
                         {domain.name}
                       </h3>
-                      <span className="text-xs text-gray-400 bg-gray-700/50 px-1.5 py-0.5 rounded">
+                      <span className="text-xs text-purple-300 bg-purple-500/20 px-2 py-1 rounded-lg">
                         {domain.tokens?.length || 0} token{(domain.tokens?.length || 0) !== 1 ? 's' : ''}
                       </span>
                     </div>
                     
-                    <div className="space-y-1 text-xs mb-3">
+                    <div className="space-y-2 text-sm mb-4">
                       <div className="flex justify-between">
-                        <span className="text-gray-400">Registrar:</span>
+                        <span className="text-purple-300/70">Registrar:</span>
                         <span className="text-white">{domain.registrar?.name || 'Unknown'}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-400">Expires:</span>
+                        <span className="text-purple-300/70">Expires:</span>
                         <span className="text-white">
                           {domain.expiresAt ? new Date(domain.expiresAt).toLocaleDateString() : 'N/A'}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-400">Tokenized:</span>
+                        <span className="text-purple-300/70">Tokenized:</span>
                         <span className="text-white">
                           {domain.tokenizedAt ? new Date(domain.tokenizedAt).toLocaleDateString() : 'N/A'}
                         </span>
                       </div>
                     </div>
                     
-                    <div className="flex space-x-1">
-                      <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-1 px-2 rounded text-xs font-medium transition-colors">
+                    <div className="flex space-x-2">
+                      <button className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg">
                         Manage
                       </button>
-                      <button className="flex-1 bg-green-600 hover:bg-green-700 text-white py-1 px-2 rounded text-xs font-medium transition-colors">
+                      <button className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg">
                         List for Sale
                       </button>
                     </div>

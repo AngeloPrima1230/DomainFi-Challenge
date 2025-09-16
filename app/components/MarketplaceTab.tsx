@@ -62,21 +62,21 @@ export default function MarketplaceTab({ className = '' }: MarketplaceTabProps) 
   return (
     <div className={`space-y-3 ${className}`}>
       {/* Compact Header with Actions */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-lg font-bold text-white">Doma Marketplace</h2>
-          <p className="text-gray-400 text-xs">Trade tokenized domains</p>
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">TAGHAUS Marketplace</h2>
+          <p className="text-purple-300/70 text-sm">Trade tokenized domains on Doma Protocol</p>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
           <button
             onClick={() => {/* Add create listing handler */}}
-            className="px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-md text-xs font-medium transition-all duration-200 transform hover:scale-105 shadow-lg"
+            className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg text-sm font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
           >
             Create Listing
           </button>
           <button
             onClick={() => {/* Add place offer handler */}}
-            className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-md text-xs font-medium transition-all duration-200 transform hover:scale-105 shadow-lg"
+            className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg text-sm font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
           >
             Place Offer
           </button>
@@ -84,24 +84,24 @@ export default function MarketplaceTab({ className = '' }: MarketplaceTabProps) 
       </div>
 
       {/* Compact Tabs */}
-      <div className="border-b border-white/20">
-        <nav className="-mb-px flex space-x-4">
+      <div className="border-b border-purple-500/20">
+        <nav className="-mb-px flex space-x-6">
           <button
             onClick={() => setActiveTab('listings')}
-            className={`py-1 px-2 border-b-2 text-xs font-medium ${
+            className={`py-2 px-4 border-b-2 text-sm font-semibold transition-all duration-200 ${
               activeTab === 'listings'
-                ? 'border-blue-400 text-blue-400'
-                : 'border-transparent text-gray-400 hover:text-white hover:border-gray-500'
+                ? 'border-purple-400 text-purple-400'
+                : 'border-transparent text-purple-300/70 hover:text-purple-300 hover:border-purple-500/50'
             }`}
           >
             Listings ({Array.isArray(listings) ? listings.length : 0})
           </button>
           <button
             onClick={() => setActiveTab('offers')}
-            className={`py-1 px-2 border-b-2 text-xs font-medium ${
+            className={`py-2 px-4 border-b-2 text-sm font-semibold transition-all duration-200 ${
               activeTab === 'offers'
-                ? 'border-blue-400 text-blue-400'
-                : 'border-transparent text-gray-400 hover:text-white hover:border-gray-500'
+                ? 'border-purple-400 text-purple-400'
+                : 'border-transparent text-purple-300/70 hover:text-purple-300 hover:border-purple-500/50'
             }`}
           >
             Offers ({Array.isArray(offers) ? offers.length : 0})
@@ -113,21 +113,21 @@ export default function MarketplaceTab({ className = '' }: MarketplaceTabProps) 
       {activeTab === 'listings' && (
         <div className="space-y-2">
           {!Array.isArray(listings) || listings.length === 0 ? (
-            <div className="text-center py-6 bg-white/5 backdrop-blur-md rounded-lg border border-white/10">
-              <svg className="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-              <h3 className="text-sm font-medium text-white mb-1">No Listings Found</h3>
-              <p className="text-gray-400 text-xs">No domains listed for sale yet</p>
-            </div>
+                <div className="text-center py-8 bg-gradient-to-br from-slate-800/30 to-purple-900/30 backdrop-blur-md rounded-xl border border-purple-500/20">
+                  <svg className="w-12 h-12 mx-auto mb-3 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                  <h3 className="text-lg font-semibold text-white mb-2">No Listings Found</h3>
+                  <p className="text-purple-300/70 text-sm">No domains listed for sale yet</p>
+                </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-              {Array.isArray(listings) && listings.map((listing) => (
-                <div
-                  key={listing.id}
-                  className="bg-white/10 backdrop-blur-md rounded-md border border-white/20 p-3 hover:bg-white/15 hover:border-white/30 transition-all cursor-pointer"
-                  onClick={() => setSelectedListing(listing)}
-                >
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {Array.isArray(listings) && listings.map((listing) => (
+                    <div
+                      key={listing.id}
+                      className="bg-gradient-to-br from-slate-800/40 to-purple-900/40 backdrop-blur-md rounded-lg border border-purple-500/20 p-4 hover:from-slate-800/60 hover:to-purple-900/60 hover:border-purple-400/40 transition-all cursor-pointer shadow-lg"
+                      onClick={() => setSelectedListing(listing)}
+                    >
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-semibold text-white truncate">{listing.name}</h3>
                     <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${
@@ -154,9 +154,9 @@ export default function MarketplaceTab({ className = '' }: MarketplaceTabProps) 
                     </div>
                   </div>
                   
-                  <button className="w-full mt-2 px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors">
-                    View Details
-                  </button>
+                      <button className="w-full mt-3 px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg text-sm font-medium hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-lg">
+                        View Details
+                      </button>
                 </div>
               ))}
             </div>
@@ -167,19 +167,19 @@ export default function MarketplaceTab({ className = '' }: MarketplaceTabProps) 
       {activeTab === 'offers' && (
         <div className="space-y-2">
           {!Array.isArray(offers) || offers.length === 0 ? (
-            <div className="text-center py-6 bg-white/5 backdrop-blur-md rounded-lg border border-white/10">
-              <svg className="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-              </svg>
-              <h3 className="text-sm font-medium text-white mb-1">No Offers Found</h3>
-              <p className="text-gray-400 text-xs">No offers placed yet</p>
-            </div>
+                <div className="text-center py-8 bg-gradient-to-br from-slate-800/30 to-purple-900/30 backdrop-blur-md rounded-xl border border-purple-500/20">
+                  <svg className="w-12 h-12 mx-auto mb-3 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  </svg>
+                  <h3 className="text-lg font-semibold text-white mb-2">No Offers Found</h3>
+                  <p className="text-purple-300/70 text-sm">No offers placed yet</p>
+                </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Array.isArray(offers) && offers.map((offer) => (
                 <div
                   key={offer.id}
-                  className="bg-white/10 backdrop-blur-md rounded-md border border-white/20 p-3 hover:bg-white/15 hover:border-white/30 transition-all"
+                  className="bg-gradient-to-br from-slate-800/40 to-purple-900/40 backdrop-blur-md rounded-lg border border-purple-500/20 p-4 hover:from-slate-800/60 hover:to-purple-900/60 hover:border-purple-400/40 transition-all shadow-lg"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-semibold text-white truncate">{offer.name}</h3>
@@ -207,9 +207,9 @@ export default function MarketplaceTab({ className = '' }: MarketplaceTabProps) 
                     </div>
                   </div>
                   
-                  <button className="w-full mt-2 px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors">
-                    Accept Offer
-                  </button>
+                      <button className="w-full mt-3 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg text-sm font-medium hover:from-green-600 hover:to-emerald-600 transition-all duration-200 shadow-lg">
+                        Accept Offer
+                      </button>
                 </div>
               ))}
             </div>
@@ -217,27 +217,27 @@ export default function MarketplaceTab({ className = '' }: MarketplaceTabProps) 
         </div>
       )}
 
-      {/* Compact Marketplace Info */}
-      <div className="bg-white/5 backdrop-blur-md rounded-lg border border-white/10 p-3">
-        <h3 className="text-sm font-semibold text-white mb-2">Marketplace Info</h3>
+          {/* Compact Marketplace Info */}
+          <div className="bg-gradient-to-br from-slate-800/30 to-purple-900/30 backdrop-blur-md rounded-xl border border-purple-500/20 p-6 shadow-lg">
+            <h3 className="text-lg font-semibold text-white mb-4">Marketplace Info</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
-            <h4 className="text-xs font-medium text-white mb-1">Currencies</h4>
-            <div className="space-y-0.5">
+            <h4 className="text-sm font-semibold text-purple-300 mb-2">Currencies</h4>
+            <div className="space-y-1">
               {supportedCurrencies.length > 0 ? (
                 supportedCurrencies.slice(0, 3).map((currency, index) => (
-                  <div key={index} className="text-xs text-gray-400">
+                  <div key={index} className="text-sm text-white/80">
                     {currency.symbol}
                   </div>
                 ))
               ) : (
-                <div className="text-xs text-gray-400">ETH, USDC, wETH</div>
+                <div className="text-sm text-white/80">ETH, USDC, wETH</div>
               )}
             </div>
           </div>
           <div>
-            <h4 className="text-xs font-medium text-white mb-1">Fees</h4>
-            <div className="text-xs text-gray-400">
+            <h4 className="text-sm font-semibold text-purple-300 mb-2">Fees</h4>
+            <div className="text-sm text-white/80">
               {marketplaceFees ? (
                 <div>
                   <div>Protocol: {marketplaceFees.protocolFee}%</div>
@@ -249,8 +249,8 @@ export default function MarketplaceTab({ className = '' }: MarketplaceTabProps) 
             </div>
           </div>
           <div>
-            <h4 className="text-xs font-medium text-white mb-1">Networks</h4>
-            <div className="text-xs text-gray-400">
+            <h4 className="text-sm font-semibold text-purple-300 mb-2">Networks</h4>
+            <div className="text-sm text-white/80">
               <div>• Doma Testnet</div>
               <div>• Sepolia</div>
             </div>

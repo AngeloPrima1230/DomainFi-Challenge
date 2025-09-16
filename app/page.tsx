@@ -28,7 +28,7 @@ export default function LandingPage() {
     } catch (error) {
       console.error('Search error:', error);
       setSearchResults([]);
-    } finally {
+      } finally {
       setIsSearching(false);
     }
   };
@@ -38,7 +38,7 @@ export default function LandingPage() {
     const timeoutId = setTimeout(() => {
       if (searchTerm) {
         handleSearch(searchTerm);
-      } else {
+    } else {
         setSearchResults([]);
       }
     }, 300);
@@ -47,132 +47,149 @@ export default function LandingPage() {
   }, [searchTerm]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col w-full">
 
       {/* Compact Hero Section */}
-      <main className="flex flex-col items-center justify-center px-3 py-8">
-        <div className="max-w-3xl mx-auto text-center">
+      <main className="flex-1 flex flex-col items-center justify-center px-3 py-8 w-full">
+        <div className="max-w-3xl mx-auto text-center w-full">
           {/* Compact Logo and Title */}
-          <div className="mb-6">
-            <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-lg">D</span>
-            </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-              Find Your
-              <span className="block bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+          <div className="mb-8">
+            <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+              <svg width="80" height="75" viewBox="0 0 237 223" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fillRule="evenodd" clipRule="evenodd" d="M201.397 51.9995L129.228 4.29099C122.54 -0.1303 113.858 -0.130298 107.169 4.291L37.7618 50.1738C35.9248 51.3881 33.9758 52.4238 31.9413 53.2667V53.2667C12.6064 61.2769 0 80.1449 0 101.073V107C0 113.075 4.92487 118 11 118H35V162C35 195.689 62.3106 223 96 223H141.426C175.338 223 202.741 195.339 202.423 161.428L201.397 51.9995ZM139 128.5H97C92.0294 128.5 88 132.529 88 137.5V189C88 193.971 92.0294 198 97 198H139C143.971 198 148 193.971 148 189V137.5C148 132.529 143.971 128.5 139 128.5Z" fill="url(#paint0_linear_landing)"/>
+                <path d="M201.397 51.9995L202.025 118.981L225.5 118.981C231.518 118.981 236.397 114.102 236.397 108.084V106.929C236.397 84.0406 224.843 59.832 203.348 52.3193C202.722 52.1007 202.06 51.9998 201.397 51.9995V51.9995Z" fill="url(#paint1_linear_landing)"/>
+                <defs>
+                  <linearGradient id="paint0_linear_landing" x1="175" y1="36" x2="48" y2="209" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#44296D"/>
+                    <stop offset="0.341346" stopColor="#178AC6"/>
+                    <stop offset="0.764423" stopColor="#C95189"/>
+                    <stop offset="1" stopColor="#EF9854"/>
+                  </linearGradient>
+                  <linearGradient id="paint1_linear_landing" x1="175" y1="36" x2="48" y2="209" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#44296D"/>
+                    <stop offset="0.341346" stopColor="#178AC6"/>
+                    <stop offset="0.764423" stopColor="#C95189"/>
+                    <stop offset="1" stopColor="#EF9854"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">
+            Find Your
+              <span className="block bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
                 Perfect Domain
-              </span>
-            </h1>
-            <p className="text-sm text-gray-300 mb-6 max-w-xl mx-auto">
-              Search, discover, and acquire tokenized domains on the blockchain
+            </span>
+          </h1>
+            <p className="text-lg text-purple-300/80 mb-8 max-w-2xl mx-auto">
+              Search, acquire, and trade domains on the blockchain.
             </p>
           </div>
 
           {/* Compact Search Box */}
           <div className="relative max-w-xl mx-auto mb-4">
             <div className="relative">
-              <input
-                type="text"
+                <input
+                  type="text"
                 placeholder="Search domains (e.g. google.com, ethereum.eth)"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-2.5 pr-10 text-sm bg-white/10 backdrop-blur-md border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-6 py-3 pr-12 text-base bg-gradient-to-r from-slate-900/80 to-purple-900/80 backdrop-blur-md border border-purple-500/50 rounded-xl text-white placeholder-purple-200/70 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent shadow-lg"
               />
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                 {isSearching ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-400"></div>
                 ) : (
-                  <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
+                  <svg className="h-5 w-5 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
                 )}
-              </div>
-            </div>
+                      </div>
+                    </div>
 
             {/* Compact Search Suggestions */}
             {searchTerm && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-lg max-h-64 overflow-y-auto z-10">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-gradient-to-br from-slate-800/95 to-purple-900/95 backdrop-blur-xl border border-purple-500/30 rounded-xl max-h-64 overflow-y-auto z-10 shadow-2xl">
                 {searchResults.length > 0 ? (
                   <div className="p-1">
                     {searchResults.slice(0, 6).map((domain, index) => (
                       <div
                         key={domain.name}
-                        className="flex items-center justify-between p-2 hover:bg-white/10 rounded-md cursor-pointer group"
+                        className="flex items-center justify-between p-3 hover:bg-purple-500/20 rounded-lg cursor-pointer group transition-all duration-200"
                         onClick={() => {
                           setSearchTerm(domain.name);
                         }}
                       >
                         <div className="flex items-center space-x-2">
-                          <div className="w-5 h-5 bg-gradient-to-r from-green-500 to-emerald-600 rounded-md flex items-center justify-center">
-                            <span className="text-white text-xs">✓</span>
-                          </div>
+                          <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                            <span className="text-white text-sm">✓</span>
+                        </div>
                           <div>
                             <p className="text-white text-sm font-medium">{domain.name}</p>
-                            <p className="text-gray-400 text-xs">
+                            <p className="text-purple-300/70 text-xs">
                               {domain.registrar?.name} • {domain.tokens?.length || 0} token{(domain.tokens?.length || 0) !== 1 ? 's' : ''}
                             </p>
-                          </div>
-                        </div>
-                        <div className="text-green-400 text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                          View
-                        </div>
                       </div>
-                    ))}
-                  </div>
-                ) : searchTerm && !isSearching ? (
-                  <div className="p-4 text-center">
-                    <div className="text-gray-400 mb-1">
-                      <svg className="mx-auto h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.47-.881-6.084-2.343" />
-                      </svg>
                     </div>
-                    <p className="text-gray-400 text-xs">No domains found for "{searchTerm}"</p>
-                  </div>
+                        <div className="text-purple-400 text-sm opacity-0 group-hover:opacity-100 transition-opacity font-medium">
+                          View
+                      </div>
+                    </div>
+                    ))}
+                        </div>
+                ) : searchTerm && !isSearching ? (
+                  <div className="p-6 text-center">
+                    <div className="text-purple-400 mb-2">
+                      <svg className="mx-auto h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.47-.881-6.084-2.343" />
+                          </svg>
+                        </div>
+                    <p className="text-purple-300/70 text-sm">No domains found for "{searchTerm}"</p>
+                      </div>
                 ) : null}
               </div>
             )}
           </div>
 
           {/* Compact Action Buttons */}
-          <div className="flex flex-wrap justify-center gap-2 mb-8">
+          <div className="flex flex-wrap justify-center gap-4 mb-8">
             <button
               onClick={() => router.push('/marketplace')}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105"
+              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
             >
               Browse Marketplace
             </button>
             {isConnected && (
-              <button
+            <button
                 onClick={() => router.push('/dashboard')}
-                className="bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 hover:border-white/30 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105"
+                className="bg-gradient-to-r from-slate-800/40 to-purple-900/40 backdrop-blur-md border border-purple-500/30 text-white hover:from-slate-800/60 hover:to-purple-900/60 hover:border-purple-400/50 px-6 py-3 rounded-xl text-base font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
               >
                 My Dashboard
-              </button>
-            )}
-          </div>
+            </button>
+                )}
+              </div>
 
           {/* Compact Popular TLDs */}
           <div className="text-center">
-            <p className="text-gray-400 text-xs mb-2">Popular extensions:</p>
-            <div className="flex flex-wrap justify-center gap-1">
+            <p className="text-purple-300/70 text-sm mb-3">Popular extensions:</p>
+            <div className="flex flex-wrap justify-center gap-2">
               {['.com', '.eth', '.org', '.net', '.io', '.xyz', '.app'].map((tld) => (
                 <button
                   key={tld}
                   onClick={() => setSearchTerm(searchTerm.split('.')[0] + tld)}
-                  className="px-2 py-1 bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white rounded-md transition-colors text-xs"
+                  className="px-3 py-1.5 bg-gradient-to-r from-slate-800/30 to-purple-900/30 border border-purple-500/20 text-purple-300 hover:from-slate-800/50 hover:to-purple-900/50 hover:text-white hover:border-purple-400/40 rounded-lg transition-all duration-200 text-sm font-medium"
                 >
                   {tld}
                 </button>
-              ))}
-            </div>
-          </div>
+                    ))}
+                  </div>
+                    </div>
         </div>
       </main>
 
       {/* Compact Footer */}
-      <footer className="absolute bottom-0 left-0 right-0 bg-black/20 backdrop-blur-md border-t border-white/10 py-2">
+      <footer className="bg-gradient-to-r from-slate-900/95 via-purple-900/95 to-slate-900/95 backdrop-blur-xl border-t border-purple-500/30 py-3">
         <div className="max-w-6xl mx-auto px-3 text-center">
-          <p className="text-gray-400 text-xs">
+          <p className="text-purple-300/70 text-sm">
             Powered by Doma Protocol • Discover, Trade, Own Digital Domains
           </p>
         </div>

@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   keywords: ['DomainFi', 'Auction', 'NFT', 'Domains', 'Doma Protocol', 'Web3'],
   authors: [{ name: 'DomainFi Challenge Team' }],
   icons: {
-    icon: '/favicon.svg',
+    icon: '/logo.svg',
   },
   openGraph: {
     title: 'DomainFi Auction Marketplace',
@@ -34,15 +34,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" className="h-full">
+      <body className={`${inter.className} h-full overflow-x-hidden`}>
         <Providers>
-          <Header />
-          {children}
+          <div className="min-h-screen flex flex-col">
+            <Header />
+            <main className="flex-1">
+              {children}
+            </main>
+          </div>
           <Toaster
             position="top-right"
             toastOptions={{
-              duration: 4000,
+              duration: 3000,
               style: {
                 background: '#363636',
                 color: '#fff',

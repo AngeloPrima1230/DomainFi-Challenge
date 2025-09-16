@@ -25,8 +25,8 @@ export default function MarketplacePage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
 
       {/* Compact Main Content */}
-      <main className="max-w-6xl mx-auto px-3 sm:px-4 py-4">
-        <div className="bg-white/5 backdrop-blur-md rounded-lg p-4 border border-white/10">
+      <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6">
+        <div className="bg-gradient-to-br from-slate-800/20 via-purple-900/20 to-slate-800/20 backdrop-blur-xl rounded-xl p-6 border border-purple-500/20 shadow-2xl">
           <MarketplaceTab />
         </div>
       </main>
