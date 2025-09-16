@@ -65,43 +65,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Compact Header */}
-      <header className="bg-black/20 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-6xl mx-auto px-3 sm:px-4">
-          <div className="flex justify-between items-center py-2">
-            <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-md flex items-center justify-center">
-                <span className="text-white font-bold text-xs">D</span>
-              </div>
-              <div>
-                <h1 className="text-sm font-bold text-white">Doma Protocol</h1>
-                <p className="text-xs text-gray-400">Dashboard</p>
-              </div>
-            </div>
-            
-            {/* Compact Navigation */}
-            <nav className="hidden md:flex items-center space-x-4">
-              <button
-                onClick={() => router.push('/')}
-                className="text-white hover:text-blue-400 transition-colors text-sm font-medium"
-              >
-                Search
-              </button>
-              <span className="text-blue-400 text-sm font-medium">Dashboard</span>
-              <button
-                onClick={() => router.push('/marketplace')}
-                className="text-white hover:text-blue-400 transition-colors text-sm font-medium"
-              >
-                Marketplace
-              </button>
-            </nav>
-            
-            <div className="scale-75">
-              <ConnectButton />
-            </div>
-          </div>
-        </div>
-      </header>
 
       <main className="max-w-6xl mx-auto px-3 sm:px-4 py-4">
         {/* Compact Dashboard Header */}
@@ -116,7 +79,7 @@ export default function DashboardPage() {
             </div>
             <button
               onClick={() => setIsCreateAuctionOpen(true)}
-              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 transform hover:scale-105"
+              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-lg"
             >
               Create Auction
             </button>

@@ -201,8 +201,9 @@ export function useDomaMarketplace() {
       const response = await fetch('/api/marketplace/offers');
       if (response.ok) {
         const data = await response.json();
-        setOffers(data);
-        console.log('Fetched offers:', data.length);
+        const offersArray = data.data?.items || [];
+        setOffers(offersArray);
+        console.log('Fetched offers:', offersArray.length);
       } else {
         setOffers([]);
       }

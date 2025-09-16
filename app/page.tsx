@@ -11,7 +11,7 @@ export default function LandingPage() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const { searchNames } = useDomaSubgraph();
-  const { isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
   const router = useRouter();
 
   // Search functionality
@@ -48,45 +48,6 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Compact Header */}
-      <header className="bg-black/20 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-6xl mx-auto px-3 sm:px-4">
-          <div className="flex justify-between items-center py-2">
-            <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-md flex items-center justify-center">
-                <span className="text-white font-bold text-xs">D</span>
-              </div>
-              <div>
-                <h1 className="text-sm font-bold text-white">Doma Protocol</h1>
-                <p className="text-xs text-gray-400">Domain Search</p>
-              </div>
-            </div>
-            
-            {/* Compact Navigation */}
-            <nav className="hidden md:flex items-center space-x-4">
-              <span className="text-blue-400 text-sm font-medium">Search</span>
-              {isConnected && (
-                <button
-                  onClick={() => router.push('/dashboard')}
-                  className="text-white hover:text-blue-400 transition-colors text-sm font-medium"
-                >
-                  Dashboard
-                </button>
-              )}
-              <button
-                onClick={() => router.push('/marketplace')}
-                className="text-white hover:text-blue-400 transition-colors text-sm font-medium"
-              >
-                Marketplace
-              </button>
-            </nav>
-            
-            <div className="scale-75">
-              <ConnectButton />
-            </div>
-          </div>
-        </div>
-      </header>
 
       {/* Compact Hero Section */}
       <main className="flex flex-col items-center justify-center px-3 py-8">

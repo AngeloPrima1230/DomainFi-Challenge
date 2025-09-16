@@ -61,11 +61,25 @@ export default function MarketplaceTab({ className = '' }: MarketplaceTabProps) 
 
   return (
     <div className={`space-y-3 ${className}`}>
-      {/* Compact Header */}
+      {/* Compact Header with Actions */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold text-white">Doma Marketplace</h2>
           <p className="text-gray-400 text-xs">Trade tokenized domains</p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => {/* Add create listing handler */}}
+            className="px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-md text-xs font-medium transition-all duration-200 transform hover:scale-105 shadow-lg"
+          >
+            Create Listing
+          </button>
+          <button
+            onClick={() => {/* Add place offer handler */}}
+            className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-md text-xs font-medium transition-all duration-200 transform hover:scale-105 shadow-lg"
+          >
+            Place Offer
+          </button>
         </div>
       </div>
 
@@ -80,7 +94,7 @@ export default function MarketplaceTab({ className = '' }: MarketplaceTabProps) 
                 : 'border-transparent text-gray-400 hover:text-white hover:border-gray-500'
             }`}
           >
-            Listings ({listings.length})
+            Listings ({Array.isArray(listings) ? listings.length : 0})
           </button>
           <button
             onClick={() => setActiveTab('offers')}
@@ -90,7 +104,7 @@ export default function MarketplaceTab({ className = '' }: MarketplaceTabProps) 
                 : 'border-transparent text-gray-400 hover:text-white hover:border-gray-500'
             }`}
           >
-            Offers ({offers.length})
+            Offers ({Array.isArray(offers) ? offers.length : 0})
           </button>
         </nav>
       </div>
@@ -98,7 +112,7 @@ export default function MarketplaceTab({ className = '' }: MarketplaceTabProps) 
       {/* Compact Content */}
       {activeTab === 'listings' && (
         <div className="space-y-2">
-          {listings.length === 0 ? (
+          {!Array.isArray(listings) || listings.length === 0 ? (
             <div className="text-center py-6 bg-white/5 backdrop-blur-md rounded-lg border border-white/10">
               <svg className="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -108,7 +122,7 @@ export default function MarketplaceTab({ className = '' }: MarketplaceTabProps) 
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-              {listings.map((listing) => (
+              {Array.isArray(listings) && listings.map((listing) => (
                 <div
                   key={listing.id}
                   className="bg-white/10 backdrop-blur-md rounded-md border border-white/20 p-3 hover:bg-white/15 hover:border-white/30 transition-all cursor-pointer"
@@ -152,7 +166,7 @@ export default function MarketplaceTab({ className = '' }: MarketplaceTabProps) 
 
       {activeTab === 'offers' && (
         <div className="space-y-2">
-          {offers.length === 0 ? (
+          {!Array.isArray(offers) || offers.length === 0 ? (
             <div className="text-center py-6 bg-white/5 backdrop-blur-md rounded-lg border border-white/10">
               <svg className="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
@@ -162,7 +176,7 @@ export default function MarketplaceTab({ className = '' }: MarketplaceTabProps) 
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-              {offers.map((offer) => (
+              {Array.isArray(offers) && offers.map((offer) => (
                 <div
                   key={offer.id}
                   className="bg-white/10 backdrop-blur-md rounded-md border border-white/20 p-3 hover:bg-white/15 hover:border-white/30 transition-all"
