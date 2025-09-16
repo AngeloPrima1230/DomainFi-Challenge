@@ -80,9 +80,7 @@ export default function DomainDetailsModal({
   };
   
   const seller = getOwner();
-  const registrar = typeof domain.registrar === 'object' && domain.registrar?.name 
-    ? domain.registrar.name 
-    : domain.registrar || 'Unknown Registrar';
+  const registrar = typeof domain.registrar === 'string' ? domain.registrar : 'Unknown Registrar';
   const expiryDate = domain.expiresAt || domain.domainExpiry;
   const isTokenized = domain.isTokenized || domain.type === 'tokenized_name';
   const tokenizedAt = domain.tokenizedAt;
@@ -161,7 +159,7 @@ export default function DomainDetailsModal({
                 className="text-gray-400 hover:text-white transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /> 
                 </svg>
               </button>
             </div>
