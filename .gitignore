@@ -155,3 +155,4 @@ backend/cache
 backend/logs
 backend/tmp
 backend/temp
+.vercel
