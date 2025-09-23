@@ -1,0 +1,14 @@
+{
+  "network": "sepolia",
+  "chainId": 11155111,
+  "contractAddress": "0xB8B1038d3BF60A752f6e978Bfc9F09D0c8616F31",
+  "deployer": "0xf0d056015Bdd86C0EFD07000F75Ea10873A1d0A7",
+  "platformFee": "250",
+  "feeRecipient": "0xf0d056015Bdd86C0EFD07000F75Ea10873A1d0A7",
+  "deploymentTime": "2025-09-23T14:16:10.831Z",
+  "supportedCurrencies": {
+    "ETH": "0x0000000000000000000000000000000000000000",
+    "USDC": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+    "WETH": "0x7b79995e5f793a07bc00c21412e50ecae098e7f9"
+  }
+}
